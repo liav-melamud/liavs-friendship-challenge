@@ -221,11 +221,15 @@ const privKey = c=>`fc_priv_${c}`;
 const privScores = c=>`fc_privsc_${c}`;
 const pubScores = id=>`fc_pubsc_${id}`;
 
+const ADMIN_CODE = '2323';
+
 function store(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
 function load(key){try{const v=localStorage.getItem(key);return v?JSON.parse(v):null}catch(e){return null}}
 function del(key){try{localStorage.removeItem(key)}catch(e){}}
 
-function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('')}
+const QUESTION_COUNT = 5;
+function escapeHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function genCode(){const CHARSET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>CHARSET[Math.floor(Math.random()*CHARSET.length)]).join('')}
 
 // ─── State ─────────────────────────────────────────────────────────────────
 let publicChallenges = load(PUB_KEY)||[];
@@ -235,6 +239,7 @@ let challengeType = 'public';
 let currentQ = 0;
 let playerAnswers = [];
 let selectedAnswer = null;
+let playerName = '';
 let showAllPublic = false;
 
 // ─── Screen routing ─────────────────────────────────────────────────────────
@@ -267,8 +272,8 @@ function renderHome(){
     return `<div class="pub-card" style="border:1.5px solid ${br};background:${bg}" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})'>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:1.05rem">${ch.title}</div>
-          <div style="color:#a8b8d8;font-size:.78rem;margin-top:2px">של ${ch.creatorName}</div>
+          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:1.05rem">${escapeHtml(ch.title)}</div>
+          <div style="color:#a8b8d8;font-size:.78rem;margin-top:2px">של ${escapeHtml(ch.creatorName)}</div>
         </div>
         <div style="color:${clr};font-size:1.4rem;opacity:.8">▶</div>
       </div>
@@ -312,7 +317,7 @@ function setChallengeType(t){
 function buildQForm(){
   const container=document.getElementById('questions-form');
   container.innerHTML='';
-  for(let i=0;i<5;i++){
+  for(let i=0;i<QUESTION_COUNT;i++){
     const div=document.createElement('div');
     div.className='q-card';
     div.innerHTML=`
@@ -326,7 +331,7 @@ function buildQForm(){
   }
 }
 
-const qAnswers=[null,null,null,null,null];
+const qAnswers = Array(QUESTION_COUNT).fill(null);
 function setQAnswer(i,v){
   qAnswers[i]=v;
   document.getElementById(`q${i}_t`).className='tbtn tbtn-t'+(v===true?' on':'');
@@ -341,7 +346,7 @@ function handleCreateSubmit(){
   if(!title) return alert('כתוב כותרת לאתגר');
   if(!delCode) return alert('כתוב קוד מחיקה');
   const questions=[];
-  for(let i=0;i<5;i++){
+  for(let i=0;i<QUESTION_COUNT;i++){
     const t=document.getElementById(`q${i}`).value.trim();
     if(!t) return alert(`שאלה ${i+1} ריקה`);
     if(qAnswers[i]===null) return alert(`סמן תשובה לשאלה ${i+1}`);
@@ -386,7 +391,7 @@ function renderEnterName(){
 function startPlaying(){
   const name=document.getElementById('playerNameInp').value.trim();
   if(!name) return alert('כתוב את שמך');
-  window._playerName=name;
+  playerName=name;
   currentQ=0; playerAnswers=[]; selectedAnswer=null;
   renderPlayScreen();
   showScreen('play');
@@ -394,19 +399,19 @@ function startPlaying(){
 
 function renderPlayScreen(){
   document.getElementById('play-qnum').textContent=`שאלה ${currentQ+1} מתוך 5`;
-  document.getElementById('play-player').textContent=window._playerName;
+  document.getElementById('play-player').textContent=playerName;
   document.getElementById('play-creator').textContent=`האתגר של ${challenge.creatorName}`;
   document.getElementById('play-question').textContent=challenge.questions[currentQ].text;
   // progress
   let dots='';
-  for(let i=0;i<5;i++) dots+=`<div class="pdot${i<=currentQ?' done':''}"></div>`;
+  for(let i=0;i<QUESTION_COUNT;i++) dots+=`<div class="pdot${i<=currentQ?' done':''}"></div>`;
   document.getElementById('progress-dots').innerHTML=dots;
   // answers
   document.getElementById('ansTrue').className='ans-btn ans-t';
   document.getElementById('ansFalse').className='ans-btn ans-f';
   selectedAnswer=null;
   document.getElementById('nextBtn').style.opacity='.5';
-  document.getElementById('nextBtn').textContent=currentQ<4?'הבא ←':'סיים! 🎯';
+  document.getElementById('nextBtn').textContent=currentQ<QUESTION_COUNT-1?'הבא ←':'סיים! 🎯';
 }
 
 function selectAnswer(v){
@@ -419,10 +424,10 @@ function selectAnswer(v){
 function nextQuestion(){
   if(selectedAnswer===null) return;
   playerAnswers.push(selectedAnswer);
-  if(currentQ<4){currentQ++;renderPlayScreen();}
+  if(currentQ<QUESTION_COUNT-1){currentQ++;renderPlayScreen();}
   else{
     const score=playerAnswers.filter((a,i)=>a===challenge.questions[i].answer).length;
-    saveScore(window._playerName,score);
+    saveScore(playerName,score);
     renderResult(score);
     showScreen('result');
   }
@@ -444,7 +449,7 @@ function renderResult(score){
     const ok=playerAnswers[i]===q.answer;
     rows+=`<div class="result-row ${ok?'res-ok':'res-no'}">
       <span>${ok?'✓':'✗'}</span>
-      <span style="flex:1;color:#e2e8f0;font-size:.88rem">${q.text}</span>
+      <span style="flex:1;color:#e2e8f0;font-size:.88rem">${escapeHtml(q.text)}</span>
       <span style="color:${ok?'#2ecc71':'#e94560'};font-size:.78rem;font-weight:700">${q.answer?'נכון':'לא נכון'}</span>
     </div>`;
   });
@@ -463,7 +468,7 @@ function showLeaderboard(){
   else scores.forEach((s,i)=>{
     rows+=`<div class="lb-row">
       <div class="rank ${rankCls[i]||''}">#${i+1}</div>
-      <div style="flex:1;color:#e2e8f0;font-weight:700;font-size:.95rem">${s.name}</div>
+      <div style="flex:1;color:#e2e8f0;font-weight:700;font-size:.95rem">${escapeHtml(s.name)}</div>
       <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;background:linear-gradient(135deg,#ff6aad,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.score}/5</div>
     </div>`;
   });
@@ -506,8 +511,6 @@ function openDeleteModal(){
 }
 
 function openSingleDelete(){
-  const modal=document.getElementById('deleteModal');
-  const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
   document.getElementById('modal-body').innerHTML=`
     <div style="color:#c0c8e8;font-size:.9rem;margin-bottom:14px;line-height:1.6">
       האתגר <strong style="color:#ffb347">"${challenge.title}"</strong> יימחק לצמיתות לכולם.
@@ -520,7 +523,7 @@ function openSingleDelete(){
 
 function doSingleDelete(){
   const typed=document.getElementById('singleDelCode').value.trim();
-  if(!challenge.deleteCode || typed===challenge.deleteCode){
+  if(typed && typed===challenge.deleteCode){
     const key=challenge.type==='public'?pubScores(challenge.id):privScores(challenge.code);
     del(key);
     if(challenge.type==='public'){
@@ -549,35 +552,64 @@ function renderDeleteModal(tab){
       const clr=cols[i%cols.length],bg=bgs[i%bgs.length];
       pubRows+=`<div class="del-row" id="delrow_${c.id}" style="border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03)">
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</div>
-          <div style="color:rgba(255,255,255,.38);font-size:.7rem">${c.creatorName}</div>
+          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.title)}</div>
+          <div style="color:rgba(255,255,255,.38);font-size:.7rem">${escapeHtml(c.creatorName)}</div>
         </div>
-        <input class="del-inp" id="delcode_${c.id}" placeholder="קוד מחיקה" oninput="checkDelMatch('${c.id}','${c.deleteCode}')">
+        <input class="del-inp" id="delcode_${c.id}" placeholder="קוד מחיקה" oninput="checkDelMatch('${c.id}')">
         <span id="delcheck_${c.id}" style="color:#2ecc71;display:none">✓</span>
       </div>`;
     });
     pubRows+=`<button class="btn btn-danger" style="margin-top:12px" onclick="doDeleteByCodes()">🗑️ מחק עם קוד נכון</button>`;
+  }
+  let adminPublicRows='';
+  if(pubList.length===0){
+    adminPublicRows='<div class="empty" style="padding:8px 0">אין אתגרים ציבוריים למחיקה</div>';
+  } else {
+    pubList.forEach((c,i)=>{
+      const clr=cols[i%cols.length];
+      adminPublicRows+=`<div class="del-row" style="border:1.5px solid rgba(255,68,102,.18);background:rgba(255,68,102,.04);margin-bottom:8px;justify-content:space-between">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.title)}</div>
+          <div style="color:rgba(255,255,255,.38);font-size:.7rem">${escapeHtml(c.creatorName)}</div>
+        </div>
+        <button class="btn btn-danger" style="width:auto;padding:6px 14px;margin:0;font-size:.8rem" onclick="doAdminDeletePublic('${c.id}')">🗑️ מחק</button>
+      </div>`;
+    });
   }
 
   document.getElementById('modal-body').innerHTML=`
     <div class="tab-row">
       <button class="tab-btn" id="tab-pub" onclick="renderDeleteModal('public')" style="border:1.5px solid ${tab==='public'?'#3ef7a0':'rgba(255,255,255,.1)'};background:${tab==='public'?'rgba(46,247,160,.12)':'transparent'};color:${tab==='public'?'#3ef7a0':'#a8b8d8'}">🌍 ציבורי</button>
       <button class="tab-btn" id="tab-priv" onclick="renderDeleteModal('private')" style="border:1.5px solid ${tab==='private'?'#cc99ff':'rgba(255,255,255,.1)'};background:${tab==='private'?'rgba(204,153,255,.12)':'transparent'};color:${tab==='private'?'#cc99ff':'#a8b8d8'}">🔐 פרטי</button>
+      <button class="tab-btn" id="tab-admin" onclick="renderDeleteModal('admin')" style="border:1.5px solid ${tab==='admin'?'#ff4466':'rgba(255,255,255,.1)'};background:${tab==='admin'?'rgba(255,68,102,.12)':'transparent'};color:${tab==='admin'?'#ff4466':'#a8b8d8'}">🛡️ Admin</button>
     </div>
     ${tab==='public'?`
       <div style="color:#c0c8e8;font-size:.82rem;margin-bottom:12px">הכנס קוד מחיקה לצד כל אתגר. קוד שגוי — לא נמחק.</div>
       ${pubRows}
-    `:`
+    `:tab==='private'?`
       <div style="color:#c0c8e8;font-size:.82rem;margin-bottom:14px">הכנס קוד גישה וקוד מחיקה. שניהם חייבים להיות נכונים.</div>
       <label class="label" style="color:#cc99ff">קוד גישה לאתגר (6 תווים)</label>
       <input class="inp" id="privDelAccess" placeholder="6 תווים..." style="margin-bottom:12px;letter-spacing:4px;text-transform:uppercase;border-color:rgba(204,153,255,.4)" oninput="this.value=this.value.toUpperCase().slice(0,6)">
       <label class="label" style="color:#ff6aad">קוד מחיקה סודי</label>
       <input class="inp" id="privDelSecret" placeholder="קוד מחיקה שהגדרת..." style="margin-bottom:16px;border-color:rgba(255,106,173,.4)">
       <button class="btn btn-danger" onclick="doDeletePrivate()">🗑️ מחק אתגר פרטי לכולם</button>
+    `:`
+      <div style="color:#c0c8e8;font-size:.82rem;margin-bottom:14px">הכנס קוד Admin כדי למחוק כל אתגר ללא קוד מחיקה.</div>
+      <label class="label" style="color:#ff4466">🛡️ קוד Admin</label>
+      <input class="inp" id="adminCodeInp" placeholder="קוד Admin..." type="password" style="margin-bottom:18px;border-color:rgba(255,68,102,.4)">
+      ${adminPublicRows}
+      <div class="divider" style="margin:14px 0"></div>
+      <label class="label" style="color:#cc99ff">מחיקת אתגר פרטי לפי קוד גישה</label>
+      <input class="inp" id="adminPrivAccess" placeholder="קוד גישה (6 תווים)..." style="margin-bottom:10px;letter-spacing:4px;text-transform:uppercase;border-color:rgba(204,153,255,.4)" oninput="this.value=this.value.toUpperCase().slice(0,6)">
+      <button class="btn btn-danger" onclick="doAdminDeletePrivate()">🗑️ מחק אתגר פרטי</button>
     `}`;
 }
 
-function checkDelMatch(id,correctCode){
+function checkDelMatch(id){
+  const pubList=load(PUB_KEY)||[];
+  const entry=pubList.find(c=>c.id===id);
+  if(!entry) return;
+  const correctCode=entry.deleteCode;
   const typed=document.getElementById(`delcode_${id}`).value.trim();
   const row=document.getElementById(`delrow_${id}`);
   const check=document.getElementById(`delcheck_${id}`);
@@ -626,6 +658,38 @@ function doDeletePrivate(){
   del(privKey(code));
   document.getElementById('deleteModal').classList.add('hidden');
   alert('✅ האתגר הפרטי נמחק לכולם!');
+}
+
+function isAdminCodeValid(){
+  const inp=document.getElementById('adminCodeInp');
+  return inp && inp.value.trim()===ADMIN_CODE;
+}
+
+function doAdminDeletePublic(id){
+  if(!isAdminCodeValid()) return alert('קוד Admin שגוי.');
+  const pubList=load(PUB_KEY)||[];
+  const target=pubList.find(c=>c.id===id);
+  if(!target) return;
+  del(pubScores(id));
+  publicChallenges=pubList.filter(c=>c.id!==id);
+  store(PUB_KEY,publicChallenges);
+  if(challenge&&challenge.id===id){challenge=null;scores=[];}
+  document.getElementById('deleteModal').classList.add('hidden');
+  renderHome();
+}
+
+function doAdminDeletePrivate(){
+  if(!isAdminCodeValid()) return alert('קוד Admin שגוי.');
+  const code=(document.getElementById('adminPrivAccess')?.value||'').trim().toUpperCase();
+  if(!code) return alert('הכנס קוד גישה לאתגר');
+  const data=load(privKey(code));
+  if(!data) return alert('לא נמצא אתגר פרטי עם הקוד הזה.');
+  del(privScores(code));
+  del(privKey(code));
+  if(challenge&&challenge.code===code){challenge=null;scores=[];}
+  document.getElementById('deleteModal').classList.add('hidden');
+  renderHome();
+}
 }
 
 function closeModal(e){if(e.target===document.getElementById('deleteModal'))document.getElementById('deleteModal').classList.add('hidden');}
