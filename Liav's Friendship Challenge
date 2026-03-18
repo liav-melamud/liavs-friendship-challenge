@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 אתגר החברות</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;direction:rtl;background:#070714;min-height:100vh}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+.card{background:rgba(10,12,35,.85);backdrop-filter:blur(18px);border-radius:22px;padding:28px 24px;width:100%;max-width:480px;border:1.5px solid rgba(180,100,255,.35);box-shadow:0 0 40px rgba(130,60,255,.18),0 8px 40px rgba(0,0,0,.6);margin-bottom:16px}
+.title{font-family:'Fredoka One',cursive;font-size:2.4rem;text-align:center;margin-bottom:6px;background:linear-gradient(135deg,#ff6aad,#ffb347,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{color:#c0c8e8;font-size:1rem;text-align:center;margin-bottom:22px}
+.btn{width:100%;padding:14px 20px;border-radius:14px;border:none;font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:800;cursor:pointer;transition:all .2s;margin-bottom:12px;display:block}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,#ff416c,#ff4b2b);color:white;box-shadow:0 4px 20px rgba(255,65,108,.45)}
+.btn-secondary{background:rgba(30,40,90,.8);color:#b0bce8;border:1.5px solid rgba(120,100,255,.35)}
+.btn-danger{background:linear-gradient(135deg,#ff2244,#ff5522);color:white;box-shadow:0 4px 18px rgba(255,34,68,.4)}
+.btn-green{background:linear-gradient(135deg,#2ecc71,#1ab394);color:#081a0f;box-shadow:0 4px 18px rgba(46,204,113,.4)}
+input.inp{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(120,100,255,.35);background:rgba(10,20,40,.8);color:#e2e8f0;font-family:'Nunito',sans-serif;font-size:.95rem;outline:none;transition:border .2s;margin-bottom:0}
+input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
+.label{color:#a8b8d8;font-size:.85rem;font-weight:700;margin-bottom:6px;display:block}
+.q-card{background:rgba(10,15,40,.7);border-radius:14px;padding:16px;margin-bottom:14px;border:1.5px solid rgba(100,120,255,.28)}
+.q-num{font-family:'Fredoka One',cursive;font-size:.9rem;margin-bottom:8px;background:linear-gradient(90deg,#ff6aad,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.toggle-row{display:flex;gap:8px;margin-top:10px}
+.tbtn{flex:1;padding:9px;border-radius:8px;border:1.5px solid;font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .2s}
+.tbtn-t{border-color:#2ecc71;color:#2ecc71;background:transparent}
+.tbtn-t.on{background:linear-gradient(135deg,#2ecc71,#1ab394);color:#0a1a0a;border-color:transparent;box-shadow:0 3px 12px rgba(46,204,113,.4)}
+.tbtn-f{border-color:#ff4466;color:#ff4466;background:transparent}
+.tbtn-f.on{background:linear-gradient(135deg,#ff416c,#ff4b2b);color:white;border-color:transparent;box-shadow:0 3px 12px rgba(255,65,108,.4)}
+.type-row{display:flex;gap:12px;margin-bottom:22px}
+.type-btn{flex:1;padding:18px 10px;border-radius:16px;border:2px solid rgba(100,120,255,.3);background:rgba(10,15,40,.7);cursor:pointer;transition:all .25s;text-align:center;font-family:'Nunito',sans-serif}
+.type-btn.sel-pub{border-color:#2ecc71;background:rgba(46,204,113,.12);box-shadow:0 0 20px rgba(46,204,113,.2)}
+.type-btn.sel-priv{border-color:#a06ef5;background:rgba(160,110,245,.12);box-shadow:0 0 20px rgba(160,110,245,.2)}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:800}
+.badge-pub{background:rgba(46,204,113,.18);color:#3ef7a0;border:1px solid rgba(46,204,113,.4)}
+.badge-priv{background:rgba(160,110,245,.18);color:#cc99ff;border:1px solid rgba(160,110,245,.4)}
+.code-box{background:rgba(160,110,245,.1);border:2px dashed rgba(160,110,245,.5);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;box-shadow:0 0 30px rgba(160,110,245,.12)}
+.code-text{font-family:'Fredoka One',cursive;font-size:3rem;letter-spacing:10px;background:linear-gradient(135deg,#cc99ff,#ff99ff,#99ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ans-row{display:flex;gap:12px;margin-bottom:24px}
+.ans-btn{flex:1;padding:14px;border-radius:12px;border:1.5px solid;font-family:'Nunito',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s}
+.ans-btn:active{transform:scale(.97)}
+.ans-t{border-color:#2ecc71;color:#3ef7a0;background:transparent}
+.ans-t.on{background:linear-gradient(135deg,#2ecc71,#1ab394);color:#081a0f;border-color:transparent;box-shadow:0 4px 18px rgba(46,204,113,.45)}
+.ans-f{border-color:#ff4466;color:#ff7799;background:transparent}
+.ans-f.on{background:linear-gradient(135deg,#ff416c,#ff4b2b);color:white;border-color:transparent;box-shadow:0 4px 18px rgba(255,65,108,.45)}
+.progress{display:flex;gap:6px;margin-bottom:20px}
+.pdot{flex:1;height:7px;border-radius:4px;background:rgba(100,100,200,.2);transition:background .3s}
+.pdot.done{background:linear-gradient(90deg,#ff6aad,#ffb347);box-shadow:0 0 8px rgba(255,106,173,.5)}
+.score-big{font-family:'Fredoka One',cursive;font-size:4.5rem;text-align:center;background:linear-gradient(135deg,#ff6aad,#ffb347,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(10,15,40,.65);margin-bottom:8px;border:1.5px solid rgba(100,120,255,.22)}
+.rank{font-family:'Fredoka One',cursive;font-size:1.3rem;min-width:32px;color:#a8b8d8}
+.rank.gold{color:#f1c40f;text-shadow:0 0 10px rgba(241,196,15,.6)}
+.rank.silver{color:#bdc3c7}
+.rank.bronze{color:#e67e22}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(180,100,255,.3),transparent);margin:20px 0}
+.back-btn{background:none;border:none;color:#a8b8d8;font-family:'Nunito',sans-serif;font-size:.9rem;cursor:pointer;margin-bottom:16px;padding:0}
+.empty{color:#a8b8d8;text-align:center;padding:24px 0;font-size:.9rem}
+.q-text{color:#e2e8f0;font-size:1.05rem;line-height:1.5;margin-bottom:16px;font-weight:600}
+.result-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;margin-bottom:8px}
+.res-ok{background:rgba(46,204,113,.12);border:1px solid rgba(46,204,113,.3)}
+.res-no{background:rgba(255,65,108,.12);border:1px solid rgba(255,65,108,.3)}
+.pub-card{border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border .2s}
+.lock-row{display:flex;align-items:stretch;gap:8px;margin-bottom:4px}
+.section-hdr{font-size:.82rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:rgba(10,12,35,.98);border:1.5px solid rgba(255,80,80,.45);border-radius:20px;padding:28px 24px;width:100%;max-width:400px;box-shadow:0 0 50px rgba(255,50,80,.3);max-height:90vh;overflow-y:auto}
+.tab-row{display:flex;gap:8px;margin-bottom:16px}
+.tab-btn{flex:1;padding:9px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;font-size:.85rem;transition:all .2s}
+.del-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;margin-bottom:10px;transition:all .2s}
+.del-inp{width:108px;padding:7px 10px;border-radius:8px;border:1.5px solid rgba(120,100,255,.35);background:rgba(10,15,40,.8);color:#e2e8f0;font-family:'Nunito',sans-serif;font-size:.82rem;outline:none}
+.two-btns{display:flex;gap:10px}
+.two-btns .btn{flex:1}
+.hidden{display:none!important}
+.grad-text{background:linear-gradient(135deg,#ff4466,#ff9944);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div id="app">
+  <!-- HOME -->
+  <div id="screen-home" class="card">
+    <div class="title">🎯 אתגר החברות</div>
+    <div style="text-align:center;margin-bottom:22px">
+      <span style="color:#ff6aad;font-weight:800;font-size:1rem">צור </span>
+      <span style="color:#ffb347;font-weight:800;font-size:1rem">אתגר </span>
+      <span style="color:#00e5ff;font-weight:800;font-size:1rem">ציבורי </span>
+      <span style="color:#cc99ff;font-weight:800;font-size:1rem">או </span>
+      <span style="color:#3ef7a0;font-weight:800;font-size:1rem">פרטי</span>
+    </div>
+    <button class="btn btn-primary" style="background:linear-gradient(135deg,#ff416c,#ff9a44,#ffb347);box-shadow:0 4px 22px rgba(255,100,80,.5);font-size:1.1rem" onclick="goCreate()">✏️ צור אתגר חדש</button>
+    <div class="divider"></div>
+    <div class="section-hdr" style="background:linear-gradient(90deg,#3ef7a0,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">🌍 אתגרים ציבוריים</div>
+    <div id="public-list"></div>
+    <div class="divider"></div>
+    <div class="section-hdr" style="background:linear-gradient(90deg,#cc99ff,#ff99ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">🔐 אתגר פרטי — הכנס קוד</div>
+    <div class="lock-row">
+      <input class="inp" id="codeInput" placeholder="קוד אתגר (6 תווים)..." style="flex:1;letter-spacing:4px;text-transform:uppercase;font-family:'Fredoka One',cursive;font-size:1.1rem;border-color:rgba(160,110,245,.45);color:#cc99ff" oninput="this.value=this.value.toUpperCase().slice(0,6)" onkeydown="if(event.key==='Enter')playWithCode()">
+      <button class="btn btn-primary" style="width:auto;padding:12px 22px;margin-bottom:0;font-size:1.3rem;background:linear-gradient(135deg,#a06ef5,#ff6aad);box-shadow:0 4px 18px rgba(160,110,245,.5)" onclick="playWithCode()">➜</button>
+    </div>
+    <div class="divider"></div>
+    <div class="two-btns" style="margin-top:4px">
+      <button id="btnLocalReset" class="btn btn-secondary hidden" style="font-size:.85rem;padding:11px 10px;border:1.5px solid rgba(255,180,0,.4);color:#ffb347" onclick="localReset()">🔄 איפוס רק אצלי</button>
+      <button class="btn btn-danger" style="font-size:.85rem;padding:11px 10px" onclick="openDeleteModal()">🗑️ מחיקת אתגרים</button>
+    </div>
+ 
+  </div>
+ 
+  <!-- CREATE -->
+  <div id="screen-create" class="card hidden">
+    <button class="back-btn" onclick="showScreen('home')">← חזרה</button>
+    <div class="title" style="font-size:1.8rem;margin-bottom:20px">✏️ יצירת אתגר</div>
+    <label class="label">סוג האתגר</label>
+    <div class="type-row">
+      <button id="typePublicBtn" class="type-btn sel-pub" onclick="setChallengeType('public')">
+        <span style="font-size:2rem;display:block;margin-bottom:6px">🌍</span>
+        <div style="font-weight:800;color:#2ecc71;font-size:.9rem">ציבורי</div>
+        <div style="color:#a8b2d8;font-size:.75rem;margin-top:3px">כולם יכולים לשחק</div>
+      </button>
+      <button id="typePrivBtn" class="type-btn" onclick="setChallengeType('private')">
+        <span style="font-size:2rem;display:block;margin-bottom:6px">🔐</span>
+        <div style="font-weight:800;color:#a06ef5;font-size:.9rem">פרטי</div>
+        <div style="color:#a8b2d8;font-size:.75rem;margin-top:3px">רק עם קוד סודי</div>
+      </button>
+    </div>
+    <label class="label">השם שלך</label>
+    <input class="inp" id="creatorNameInp" placeholder="מה שמך?" style="margin-bottom:16px">
+    <label class="label">כותרת האתגר</label>
+    <input class="inp" id="titleInp" placeholder='למשל: "כמה אתה מכיר אותי?"' style="margin-bottom:16px">
+    <label class="label">🔑 קוד מחיקה (שמור אותו!)</label>
+    <input class="inp" id="deleteCodeInp" placeholder='קוד שתזכור, למשל "pizza123"' style="margin-bottom:20px;border-color:rgba(255,179,71,.4)">
+    <div id="questions-form"></div>
+    <button class="btn btn-primary" onclick="handleCreateSubmit()">🚀 פרסם!</button>
+  </div>
+ 
+  <!-- CREATED -->
+  <div id="screen-created" class="card hidden" style="text-align:center">
+    <div style="font-size:3rem;margin-bottom:12px">🎉</div>
+    <div class="title" style="font-size:1.8rem">האתגר פורסם!</div>
+    <div id="created-info" style="color:#a8b2d8;margin-bottom:4px;font-size:.9rem"></div>
+    <div id="created-title" class="subtitle"></div>
+    <div id="priv-code-box" class="code-box hidden">
+      <div style="color:#a8b2d8;font-size:.85rem;margin-bottom:8px">🔐 הקוד הסודי לאתגר שלך</div>
+      <div id="priv-code-text" class="code-text"></div>
+      <div style="color:#a8b2d8;font-size:.8rem;margin-top:8px">שתף את הקוד רק עם חברים!</div>
+    </div>
+    <button class="btn" style="background:#25D366;color:white;font-weight:800" onclick="shareWhatsApp()">📲 שתף בוואטסאפ</button>
+    <button class="btn btn-primary" onclick="goPlay()">🎮 שחק עכשיו</button>
+    <button class="btn btn-secondary" onclick="showScreen('leaderboard')">🏆 טבלת ניקוד</button>
+    <button class="btn btn-secondary" onclick="showScreen('home')">🏠 דף הבית</button>
+  </div>
+ 
+  <!-- ENTER NAME -->
+  <div id="screen-enter-name" class="card hidden">
+    <button class="back-btn" onclick="showScreen('home')">← חזרה</button>
+    <div style="text-align:center;margin-bottom:20px">
+      <span id="en-badge" class="badge" style="margin-bottom:12px;display:inline-block"></span>
+      <div style="color:#a8b2d8;font-size:.85rem;margin-top:8px;margin-bottom:4px">האתגר של</div>
+      <div id="en-creator" style="font-family:'Fredoka One',cursive;color:#e94560;font-size:2.2rem"></div>
+      <div id="en-title" style="color:#a8b2d8;font-size:.9rem;margin-top:4px"></div>
+    </div>
+    <label class="label">השם שלך</label>
+    <input class="inp" id="playerNameInp" placeholder="כתוב את שמך..." style="margin-bottom:20px" onkeydown="if(event.key==='Enter')startPlaying()">
+    <button class="btn btn-primary" onclick="startPlaying()">🎯 התחל!</button>
+  </div>
+ 
+  <!-- PLAY -->
+  <div id="screen-play" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div id="play-qnum" style="color:#a8b2d8;font-size:.85rem"></div>
+      <div id="play-player" style="color:#e94560;font-weight:700;font-size:.85rem"></div>
+    </div>
+    <div id="play-creator" style="color:#a8b2d8;font-size:.78rem;text-align:center;margin-bottom:14px"></div>
+    <div class="progress" id="progress-dots"></div>
+    <div id="play-question" class="q-text"></div>
+    <div class="ans-row">
+      <button class="ans-btn ans-t" id="ansTrue" onclick="selectAnswer(true)">✓ נכון</button>
+      <button class="ans-btn ans-f" id="ansFalse" onclick="selectAnswer(false)">✗ לא נכון</button>
+    </div>
+    <button class="btn btn-primary" id="nextBtn" style="opacity:.5" onclick="nextQuestion()">הבא ←</button>
+  </div>
+ 
+  <!-- RESULT -->
+  <div id="screen-result" class="card hidden">
+    <div id="result-score" class="score-big"></div>
+    <div id="result-label" style="color:#c0c8e8;text-align:center;font-size:1rem;margin-bottom:24px"></div>
+    <div id="result-rows"></div>
+    <button class="btn btn-primary" onclick="showScreen('leaderboard')">🏆 ראה טבלת ניקוד</button>
+    <button class="btn btn-secondary" onclick="showScreen('home')">🏠 דף הבית</button>
+  </div>
+ 
+  <!-- LEADERBOARD -->
+  <div id="screen-leaderboard" class="card hidden">
+    <button class="back-btn" onclick="showScreen('home')">← חזרה</button>
+    <div class="title" style="font-size:1.8rem;margin-bottom:4px">🏆 טבלת ניקוד</div>
+    <div id="lb-badge" style="text-align:center;margin-bottom:6px"></div>
+    <div id="lb-title" class="subtitle" style="margin-bottom:20px"></div>
+    <div id="lb-rows"></div>
+    <div class="divider"></div>
+    <button class="btn" style="background:#25D366;color:white;font-weight:800" onclick="shareWhatsApp()">📲 שתף בוואטסאפ</button>
+    <button class="btn btn-secondary" onclick="goPlay()">🎮 שחק שוב</button>
+    <button class="btn btn-danger" style="font-size:.88rem;padding:11px 16px;opacity:.85;margin-top:4px" onclick="openSingleDelete()">🗑️ מחק אתגר זה לכולם</button>
+  </div>
+</div>
+ 
+<!-- DELETE MODAL -->
+<div id="deleteModal" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="title grad-text" style="font-family:'Fredoka One',cursive;font-size:1.4rem;margin-bottom:12px;-webkit-text-fill-color:unset">🗑️ מחיקת אתגרים</div>
+    <div id="modal-body"></div>
+    <button class="btn btn-secondary" onclick="document.getElementById('deleteModal').classList.add('hidden')">ביטול</button>
+  </div>
+</div>
+ 
+<script>
+// ─── Storage (localStorage fallback) ───────────────────────────────────────
+const PUB_KEY = 'fc_public_challenges';
+const privKey = c=>`fc_priv_${c}`;
+const privScores = c=>`fc_privsc_${c}`;
+const pubScores = id=>`fc_pubsc_${id}`;
+ 
+function store(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
+function load(key){try{const v=localStorage.getItem(key);return v?JSON.parse(v):null}catch(e){return null}}
+function del(key){try{localStorage.removeItem(key)}catch(e){}}
+ 
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('')}
+ 
+// ─── State ─────────────────────────────────────────────────────────────────
+let publicChallenges = load(PUB_KEY)||[];
+let challenge = null;
+let scores = [];
+let challengeType = 'public';
+let currentQ = 0;
+let playerAnswers = [];
+let selectedAnswer = null;
+let showAllPublic = false;
+ 
+// ─── Screen routing ─────────────────────────────────────────────────────────
+const screens = ['home','create','created','enter-name','play','result','leaderboard'];
+function showScreen(name){
+  screens.forEach(s=>document.getElementById('screen-'+s).classList.add('hidden'));
+  document.getElementById('screen-'+name).classList.remove('hidden');
+  if(name==='home') renderHome();
+}
+ 
+// ─── Home ──────────────────────────────────────────────────────────────────
+function renderHome(){
+  publicChallenges = load(PUB_KEY)||[];
+  const list = document.getElementById('public-list');
+  const btnReset = document.getElementById('btnLocalReset');
+  if(publicChallenges.length>0) btnReset.classList.remove('hidden');
+  else btnReset.classList.add('hidden');
+ 
+  const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
+  const bgs=['rgba(46,247,160,.08)','rgba(0,229,255,.08)','rgba(255,179,71,.08)','rgba(255,106,173,.08)','rgba(204,153,255,.08)'];
+  const brs=['rgba(46,247,160,.28)','rgba(0,229,255,.28)','rgba(255,179,71,.28)','rgba(255,106,173,.28)','rgba(204,153,255,.28)'];
+ 
+  if(publicChallenges.length===0){
+    list.innerHTML='<div style="text-align:center;padding:12px 0;font-size:.9rem;background:linear-gradient(90deg,#ff6aad,#ffb347,#00e5ff,#cc99ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700">אין אתגר ציבורי פעיל כרגע</div>';
+    return;
+  }
+  const shown = showAllPublic ? publicChallenges.slice().reverse() : publicChallenges.slice().reverse().slice(0,3);
+  let html = shown.map((ch,i)=>{
+    const clr=cols[i%cols.length],bg=bgs[i%bgs.length],br=brs[i%brs.length];
+    return `<div class="pub-card" style="border:1.5px solid ${br};background:${bg}" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})'>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:1.05rem">${ch.title}</div>
+          <div style="color:#a8b8d8;font-size:.78rem;margin-top:2px">של ${ch.creatorName}</div>
+        </div>
+        <div style="color:${clr};font-size:1.4rem;opacity:.8">▶</div>
+      </div>
+    </div>`;
+  }).join('');
+  if(publicChallenges.length>3 && !showAllPublic){
+    html+=`<button class="btn btn-secondary" style="margin-top:4px;font-size:.9rem;padding:10px 16px" onclick="showAllPublic=true;renderHome()">🌍 הצג את כל האתגרים הציבוריים (${publicChallenges.length})</button>`;
+  }
+  if(showAllPublic){
+    html+=`<button class="btn btn-secondary" style="margin-top:4px;font-size:.85rem;padding:8px 14px" onclick="showAllPublic=false;renderHome()">הסתר ↑</button>`;
+  }
+  list.innerHTML=html;
+}
+ 
+function playPublic(chJson){
+  challenge=JSON.parse(chJson);
+  scores=load(pubScores(challenge.id))||[];
+  document.getElementById('playerNameInp').value='';
+  renderEnterName();
+  showScreen('enter-name');
+}
+ 
+// ─── Create ─────────────────────────────────────────────────────────────────
+function goCreate(){
+  challengeType='public';
+  document.getElementById('typePublicBtn').className='type-btn sel-pub';
+  document.getElementById('typePrivBtn').className='type-btn';
+  document.getElementById('creatorNameInp').value='';
+  document.getElementById('titleInp').value='';
+  document.getElementById('deleteCodeInp').value='';
+  buildQForm();
+  showScreen('create');
+}
+ 
+function setChallengeType(t){
+  challengeType=t;
+  document.getElementById('typePublicBtn').className=t==='public'?'type-btn sel-pub':'type-btn';
+  document.getElementById('typePrivBtn').className=t==='private'?'type-btn sel-priv':'type-btn';
+}
+ 
+function buildQForm(){
+  const container=document.getElementById('questions-form');
+  container.innerHTML='';
+  for(let i=0;i<5;i++){
+    const div=document.createElement('div');
+    div.className='q-card';
+    div.innerHTML=`
+      <div class="q-num">שאלה ${i+1}</div>
+      <input class="inp" id="q${i}" placeholder="כתוב את השאלה או המשפט..." style="margin-bottom:0">
+      <div class="toggle-row">
+        <button class="tbtn tbtn-t" id="q${i}_t" onclick="setQAnswer(${i},true)">✓ נכון</button>
+        <button class="tbtn tbtn-f" id="q${i}_f" onclick="setQAnswer(${i},false)">✗ לא נכון</button>
+      </div>`;
+    container.appendChild(div);
+  }
+}
+ 
+const qAnswers=[null,null,null,null,null];
+function setQAnswer(i,v){
+  qAnswers[i]=v;
+  document.getElementById(`q${i}_t`).className='tbtn tbtn-t'+(v===true?' on':'');
+  document.getElementById(`q${i}_f`).className='tbtn tbtn-f'+(v===false?' on':'');
+}
+ 
+function handleCreateSubmit(){
+  const creator=document.getElementById('creatorNameInp').value.trim();
+  const title=document.getElementById('titleInp').value.trim();
+  const delCode=document.getElementById('deleteCodeInp').value.trim();
+  if(!creator) return alert('כתוב את שמך');
+  if(!title) return alert('כתוב כותרת לאתגר');
+  if(!delCode) return alert('כתוב קוד מחיקה');
+  const questions=[];
+  for(let i=0;i<5;i++){
+    const t=document.getElementById(`q${i}`).value.trim();
+    if(!t) return alert(`שאלה ${i+1} ריקה`);
+    if(qAnswers[i]===null) return alert(`סמן תשובה לשאלה ${i+1}`);
+    questions.push({text:t,answer:qAnswers[i]});
+  }
+  const code=challengeType==='private'?genCode():null;
+  const id=Date.now().toString();
+  const data={title,creatorName:creator,type:challengeType,code,id,deleteCode:delCode,questions};
+  if(challengeType==='public'){
+    publicChallenges.push(data);
+    store(PUB_KEY,publicChallenges);
+  } else {
+    store(privKey(code),data);
+  }
+  challenge=data; scores=[];
+  // render created screen
+  document.getElementById('created-info').innerHTML=`האתגר של <strong style="color:#e94560">${creator}</strong> <span class="badge ${challengeType==='public'?'badge-pub':'badge-priv'}">${challengeType==='public'?'🌍 ציבורי':'🔐 פרטי'}</span>`;
+  document.getElementById('created-title').textContent=`"${title}"`;
+  if(challengeType==='private'){
+    document.getElementById('priv-code-text').textContent=code;
+    document.getElementById('priv-code-box').classList.remove('hidden');
+  } else {
+    document.getElementById('priv-code-box').classList.add('hidden');
+  }
+  showScreen('created');
+}
+ 
+// ─── Play ────────────────────────────────────────────────────────────────────
+function goPlay(){
+  document.getElementById('playerNameInp').value='';
+  renderEnterName();
+  showScreen('enter-name');
+}
+ 
+function renderEnterName(){
+  document.getElementById('en-badge').className='badge '+(challenge.type==='public'?'badge-pub':'badge-priv');
+  document.getElementById('en-badge').textContent=challenge.type==='public'?'🌍 ציבורי':'🔐 פרטי';
+  document.getElementById('en-creator').textContent=challenge.creatorName;
+  document.getElementById('en-title').textContent=`"${challenge.title}"`;
+}
+ 
+function startPlaying(){
+  const name=document.getElementById('playerNameInp').value.trim();
+  if(!name) return alert('כתוב את שמך');
+  window._playerName=name;
+  currentQ=0; playerAnswers=[]; selectedAnswer=null;
+  renderPlayScreen();
+  showScreen('play');
+}
+ 
+function renderPlayScreen(){
+  document.getElementById('play-qnum').textContent=`שאלה ${currentQ+1} מתוך 5`;
+  document.getElementById('play-player').textContent=window._playerName;
+  document.getElementById('play-creator').textContent=`האתגר של ${challenge.creatorName}`;
+  document.getElementById('play-question').textContent=challenge.questions[currentQ].text;
+  // progress
+  let dots='';
+  for(let i=0;i<5;i++) dots+=`<div class="pdot${i<=currentQ?' done':''}"></div>`;
+  document.getElementById('progress-dots').innerHTML=dots;
+  // answers
+  document.getElementById('ansTrue').className='ans-btn ans-t';
+  document.getElementById('ansFalse').className='ans-btn ans-f';
+  selectedAnswer=null;
+  document.getElementById('nextBtn').style.opacity='.5';
+  document.getElementById('nextBtn').textContent=currentQ<4?'הבא ←':'סיים! 🎯';
+}
+ 
+function selectAnswer(v){
+  selectedAnswer=v;
+  document.getElementById('ansTrue').className='ans-btn ans-t'+(v===true?' on':'');
+  document.getElementById('ansFalse').className='ans-btn ans-f'+(v===false?' on':'');
+  document.getElementById('nextBtn').style.opacity='1';
+}
+ 
+function nextQuestion(){
+  if(selectedAnswer===null) return;
+  playerAnswers.push(selectedAnswer);
+  if(currentQ<4){currentQ++;renderPlayScreen();}
+  else{
+    const score=playerAnswers.filter((a,i)=>a===challenge.questions[i].answer).length;
+    saveScore(window._playerName,score);
+    renderResult(score);
+    showScreen('result');
+  }
+}
+ 
+function saveScore(name,score){
+  const key=challenge.type==='public'?pubScores(challenge.id):privScores(challenge.code);
+  scores=load(key)||[];
+  scores.push({name,score,time:Date.now()});
+  scores.sort((a,b)=>b.score-a.score);
+  store(key,scores);
+}
+ 
+function renderResult(score){
+  document.getElementById('result-score').textContent=`${score}/5`;
+  document.getElementById('result-label').textContent=score===5?'🏆 מושלם! כל הכבוד!':score>=3?'👏 כל הכבוד!':'😅 נסה שוב בפעם הבאה!';
+  let rows='';
+  challenge.questions.forEach((q,i)=>{
+    const ok=playerAnswers[i]===q.answer;
+    rows+=`<div class="result-row ${ok?'res-ok':'res-no'}">
+      <span>${ok?'✓':'✗'}</span>
+      <span style="flex:1;color:#e2e8f0;font-size:.88rem">${q.text}</span>
+      <span style="color:${ok?'#2ecc71':'#e94560'};font-size:.78rem;font-weight:700">${q.answer?'נכון':'לא נכון'}</span>
+    </div>`;
+  });
+  document.getElementById('result-rows').innerHTML=rows;
+}
+ 
+// ─── Leaderboard ─────────────────────────────────────────────────────────────
+function showLeaderboard(){
+  const key=challenge.type==='public'?pubScores(challenge.id):privScores(challenge.code);
+  scores=load(key)||[];
+  document.getElementById('lb-badge').innerHTML=`<span class="badge ${challenge.type==='public'?'badge-pub':'badge-priv'}">${challenge.type==='public'?'🌍 ציבורי':'🔐 פרטי'}</span>`;
+  document.getElementById('lb-title').textContent=challenge.title;
+  const rankCls=['gold','silver','bronze'];
+  let rows='';
+  if(scores.length===0){rows='<div class="empty">עדיין אין משתתפים. שתף!</div>';}
+  else scores.forEach((s,i)=>{
+    rows+=`<div class="lb-row">
+      <div class="rank ${rankCls[i]||''}">#${i+1}</div>
+      <div style="flex:1;color:#e2e8f0;font-weight:700;font-size:.95rem">${s.name}</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;background:linear-gradient(135deg,#ff6aad,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.score}/5</div>
+    </div>`;
+  });
+  document.getElementById('lb-rows').innerHTML=rows;
+  showScreen('leaderboard');
+}
+ 
+// ─── WhatsApp ─────────────────────────────────────────────────────────────────
+function shareWhatsApp(){
+  const url=window.location.href;
+  const text=challenge.type==='private'
+    ?`🔐 קיבלת גישה לאתגר הפרטי של ${challenge.creatorName}!\n"${challenge.title}"\nהקוד הסודי: *${challenge.code}*\n👉 ${url}`
+    :`🎯 האתגר של ${challenge.creatorName}!\n"${challenge.title}"\nכמה אתה מכיר אותי?\n👉 ${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
+}
+ 
+// ─── Code entry ──────────────────────────────────────────────────────────────
+function playWithCode(){
+  const code=document.getElementById('codeInput').value.trim().toUpperCase();
+  if(code.length<4) return alert('הכנס קוד תקין');
+  const data=load(privKey(code));
+  if(!data) return alert('קוד לא נמצא! בדוק שהקוד נכון.');
+  challenge=data;
+  scores=load(privScores(code))||[];
+  document.getElementById('playerNameInp').value='';
+  renderEnterName();
+  showScreen('enter-name');
+}
+ 
+// ─── Local reset ─────────────────────────────────────────────────────────────
+function localReset(){
+  publicChallenges=[];
+  renderHome();
+}
+ 
+// ─── Delete modal ─────────────────────────────────────────────────────────────
+function openDeleteModal(){
+  renderDeleteModal('public');
+  document.getElementById('deleteModal').classList.remove('hidden');
+}
+ 
+function openSingleDelete(){
+  const modal=document.getElementById('deleteModal');
+  const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
+  document.getElementById('modal-body').innerHTML=`
+    <div style="color:#c0c8e8;font-size:.9rem;margin-bottom:14px;line-height:1.6">
+      האתגר <strong style="color:#ffb347">"${challenge.title}"</strong> יימחק לצמיתות לכולם.
+    </div>
+    <label class="label" style="color:#ff6aad">🔑 קוד מחיקה</label>
+    <input class="inp" id="singleDelCode" placeholder="הכנס קוד מחיקה..." style="margin-bottom:14px;border-color:rgba(255,106,173,.4)">
+    <button class="btn btn-danger" onclick="doSingleDelete()">🗑️ מחק לכולם</button>`;
+  document.getElementById('deleteModal').classList.remove('hidden');
+}
+ 
+function doSingleDelete(){
+  const typed=document.getElementById('singleDelCode').value.trim();
+  if(!challenge.deleteCode || typed===challenge.deleteCode){
+    const key=challenge.type==='public'?pubScores(challenge.id):privScores(challenge.code);
+    del(key);
+    if(challenge.type==='public'){
+      publicChallenges=publicChallenges.filter(c=>c.id!==challenge.id);
+      store(PUB_KEY,publicChallenges);
+    } else {
+      del(privKey(challenge.code));
+    }
+    document.getElementById('deleteModal').classList.add('hidden');
+    challenge=null; scores=[];
+    showScreen('home');
+  } else {
+    alert('קוד מחיקה שגוי. האתגר לא נמחק.');
+  }
+}
+ 
+function renderDeleteModal(tab){
+  const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
+  const bgs=['rgba(46,247,160,.08)','rgba(0,229,255,.08)','rgba(255,179,71,.08)','rgba(255,106,173,.08)','rgba(204,153,255,.08)'];
+  let pubRows='';
+  const pubList=load(PUB_KEY)||[];
+  if(pubList.length===0){
+    pubRows='<div class="empty" style="padding:12px 0">אין אתגרים ציבוריים</div>';
+  } else {
+    pubList.forEach((c,i)=>{
+      const clr=cols[i%cols.length],bg=bgs[i%bgs.length];
+      pubRows+=`<div class="del-row" id="delrow_${c.id}" style="border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03)">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</div>
+          <div style="color:rgba(255,255,255,.38);font-size:.7rem">${c.creatorName}</div>
+        </div>
+        <input class="del-inp" id="delcode_${c.id}" placeholder="קוד מחיקה" oninput="checkDelMatch('${c.id}','${c.deleteCode}')">
+        <span id="delcheck_${c.id}" style="color:#2ecc71;display:none">✓</span>
+      </div>`;
+    });
+    pubRows+=`<button class="btn btn-danger" style="margin-top:12px" onclick="doDeleteByCodes()">🗑️ מחק עם קוד נכון</button>`;
+  }
+ 
+  document.getElementById('modal-body').innerHTML=`
+    <div class="tab-row">
+      <button class="tab-btn" id="tab-pub" onclick="renderDeleteModal('public')" style="border:1.5px solid ${tab==='public'?'#3ef7a0':'rgba(255,255,255,.1)'};background:${tab==='public'?'rgba(46,247,160,.12)':'transparent'};color:${tab==='public'?'#3ef7a0':'#a8b8d8'}">🌍 ציבורי</button>
+      <button class="tab-btn" id="tab-priv" onclick="renderDeleteModal('private')" style="border:1.5px solid ${tab==='private'?'#cc99ff':'rgba(255,255,255,.1)'};background:${tab==='private'?'rgba(204,153,255,.12)':'transparent'};color:${tab==='private'?'#cc99ff':'#a8b8d8'}">🔐 פרטי</button>
+    </div>
+    ${tab==='public'?`
+      <div style="color:#c0c8e8;font-size:.82rem;margin-bottom:12px">הכנס קוד מחיקה לצד כל אתגר. קוד שגוי — לא נמחק.</div>
+      ${pubRows}
+    `:`
+      <div style="color:#c0c8e8;font-size:.82rem;margin-bottom:14px">הכנס קוד גישה וקוד מחיקה. שניהם חייבים להיות נכונים.</div>
+      <label class="label" style="color:#cc99ff">קוד גישה לאתגר (6 תווים)</label>
+      <input class="inp" id="privDelAccess" placeholder="6 תווים..." style="margin-bottom:12px;letter-spacing:4px;text-transform:uppercase;border-color:rgba(204,153,255,.4)" oninput="this.value=this.value.toUpperCase().slice(0,6)">
+      <label class="label" style="color:#ff6aad">קוד מחיקה סודי</label>
+      <input class="inp" id="privDelSecret" placeholder="קוד מחיקה שהגדרת..." style="margin-bottom:16px;border-color:rgba(255,106,173,.4)">
+      <button class="btn btn-danger" onclick="doDeletePrivate()">🗑️ מחק אתגר פרטי לכולם</button>
+    `}`;
+}
+ 
+function checkDelMatch(id,correctCode){
+  const typed=document.getElementById(`delcode_${id}`).value.trim();
+  const row=document.getElementById(`delrow_${id}`);
+  const check=document.getElementById(`delcheck_${id}`);
+  const inp=document.getElementById(`delcode_${id}`);
+  if(typed===correctCode){
+    row.style.border='1.5px solid #2ecc71';
+    row.style.background='rgba(46,204,113,.1)';
+    check.style.display='inline';
+    inp.style.borderColor='#2ecc71';
+    inp.style.color='#3ef7a0';
+  } else {
+    row.style.border='1.5px solid rgba(255,255,255,.1)';
+    row.style.background='rgba(255,255,255,.03)';
+    check.style.display='none';
+    inp.style.borderColor='rgba(120,100,255,.35)';
+    inp.style.color='#e2e8f0';
+  }
+}
+ 
+function doDeleteByCodes(){
+  const pubList=load(PUB_KEY)||[];
+  let deleted=0;
+  const remaining=pubList.filter(c=>{
+    const inp=document.getElementById(`delcode_${c.id}`);
+    if(!inp) return true;
+    if(inp.value.trim()===c.deleteCode){del(pubScores(c.id));deleted++;return false;}
+    return true;
+  });
+  if(deleted===0) return alert('אף קוד לא תואם. שום דבר לא נמחק.');
+  store(PUB_KEY,remaining);
+  publicChallenges=remaining;
+  document.getElementById('deleteModal').classList.add('hidden');
+  alert(`✅ ${deleted} אתגרים נמחקו לכולם!`);
+  renderHome();
+}
+ 
+function doDeletePrivate(){
+  const code=(document.getElementById('privDelAccess')?.value||'').trim().toUpperCase();
+  const secret=(document.getElementById('privDelSecret')?.value||'').trim();
+  if(!code) return alert('הכנס קוד גישה');
+  if(!secret) return alert('הכנס קוד מחיקה');
+  const data=load(privKey(code));
+  if(!data) return alert('לא נמצא אתגר פרטי עם הקוד הזה.');
+  if(data.deleteCode!==secret) return alert('קוד המחיקה שגוי. האתגר לא נמחק.');
+  del(privScores(code));
+  del(privKey(code));
+  document.getElementById('deleteModal').classList.add('hidden');
+  alert('✅ האתגר הפרטי נמחק לכולם!');
+}
+ 
+function closeModal(e){if(e.target===document.getElementById('deleteModal'))document.getElementById('deleteModal').classList.add('hidden');}
+ 
+// Override showScreen for leaderboard
+const _origShow=showScreen;
+window.showScreen=function(name){
+  _origShow(name);
+  if(name==='leaderboard'&&challenge) showLeaderboard();
+};
+ 
+// ─── Animated Background ──────────────────────────────────────────────────────
+(function(){
+  const canvas=document.getElementById('bgCanvas');
+  const ctx=canvas.getContext('2d');
+  let W=canvas.width=window.innerWidth,H=canvas.height=window.innerHeight;
+  window.addEventListener('resize',()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;});
+  const sc=[[255,100,130],[255,180,60],[100,220,255],[180,100,255],[80,255,180],[255,255,120],[255,120,255]];
+  const stars=Array.from({length:180},()=>{
+    const c=sc[Math.floor(Math.random()*sc.length)];
+    return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.2+.4,speed:Math.random()*.2+.04,twinkle:Math.random()*Math.PI*2,twinkleSpeed:Math.random()*.04+.015,color:c,drift:(Math.random()-.5)*.06};
+  });
+  function resetShoot(){return{x:Math.random()*W,y:Math.random()*H*.5,vx:-(Math.random()*6+4),vy:Math.random()*3+1.5,len:Math.random()*100+60,alpha:0,life:0,maxLife:Math.random()*60+40,color:sc[Math.floor(Math.random()*sc.length)]};}
+  const shoots=Array.from({length:5},resetShoot);
+  const orbs=[
+    {x:W*.15,y:H*.2,vx:.22,vy:.14,r:240,r2:[255,50,100]},{x:W*.82,y:H*.12,vx:-.15,vy:.25,r:280,r2:[130,60,255]},
+    {x:W*.5,y:H*.75,vx:.28,vy:-.18,r:200,r2:[0,210,150]},{x:W*.08,y:H*.82,vx:.12,vy:-.22,r:260,r2:[255,140,0]},
+    {x:W*.92,y:H*.6,vx:-.25,vy:.13,r:180,r2:[0,180,255]},{x:W*.45,y:H*.35,vx:.18,vy:.2,r:220,r2:[255,60,200]},
+  ];
+  function draw(){
+    ctx.fillStyle='#070714';ctx.fillRect(0,0,W,H);
+    orbs.forEach(o=>{
+      o.x+=o.vx;o.y+=o.vy;
+      if(o.x<-o.r||o.x>W+o.r)o.vx*=-1;if(o.y<-o.r||o.y>H+o.r)o.vy*=-1;
+      const[r,g,b]=o.r2,g2=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+      g2.addColorStop(0,`rgba(${r},${g},${b},.28)`);g2.addColorStop(.4,`rgba(${r},${g},${b},.13)`);g2.addColorStop(.75,`rgba(${r},${g},${b},.05)`);g2.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.fillStyle=g2;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();
+    });
+    shoots.forEach((s,i)=>{
+      s.life++;s.x+=s.vx;s.y+=s.vy;
+      s.alpha=s.life<15?s.life/15:s.life>s.maxLife?0:1-(s.life-s.maxLife*.7)/(s.maxLife*.3);
+      if(s.life>s.maxLife||s.x<-200||s.y>H+50){shoots[i]=resetShoot();return;}
+      const[r,g,b]=s.color,tx=s.x+Math.cos(Math.atan2(s.vy,s.vx)+Math.PI)*s.len,ty=s.y+Math.sin(Math.atan2(s.vy,s.vx)+Math.PI)*s.len;
+      const sg=ctx.createLinearGradient(s.x,s.y,tx,ty);
+      sg.addColorStop(0,`rgba(${r},${g},${b},${s.alpha*.9})`);sg.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.strokeStyle=sg;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(tx,ty);ctx.stroke();
+      ctx.beginPath();ctx.arc(s.x,s.y,2,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${s.alpha})`;ctx.fill();
+    });
+    stars.forEach(s=>{
+      s.y-=s.speed;s.x+=s.drift;s.twinkle+=s.twinkleSpeed;
+      if(s.y<-3){s.y=H+3;s.x=Math.random()*W;}
+      if(s.x<-3)s.x=W+3;if(s.x>W+3)s.x=-3;
+      const alpha=.5+.5*Math.abs(Math.sin(s.twinkle)),[r,g,b]=s.color;
+      if(s.r>1.5){
+        ctx.save();ctx.translate(s.x,s.y);ctx.fillStyle=`rgba(${r},${g},${b},${alpha})`;ctx.beginPath();
+        for(let p=0;p<5;p++){const a=p*Math.PI*2/5-Math.PI/2,a2=a+Math.PI/5;ctx.lineTo(Math.cos(a)*s.r*1.8,Math.sin(a)*s.r*1.8);ctx.lineTo(Math.cos(a2)*s.r*.8,Math.sin(a2)*s.r*.8);}
+        ctx.closePath();ctx.fill();ctx.restore();
+      } else {ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(${r},${g},${b},${alpha})`;ctx.fill();}
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+ 
+// Init
+buildQForm();
+renderHome();
+</script>
+</body>
+</html>
