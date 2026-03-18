@@ -226,6 +226,20 @@ const ADMIN_CODE = '2323';
 function store(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
 function load(key){try{const v=localStorage.getItem(key);return v?JSON.parse(v):null}catch(e){return null}}
 function del(key){try{localStorage.removeItem(key)}catch(e){}}
+function getAllPrivateChallenges(){
+  const privs=[];
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key&&key.startsWith('fc_priv_')){
+        const code=key.replace('fc_priv_','');
+        const data=load(key);
+        if(data) privs.push({...data,code});
+      }
+    }
+  }catch(e){}
+  return privs;
+}
 
 const QUESTION_COUNT = 5;
 function escapeHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -236,6 +250,7 @@ let publicChallenges = load(PUB_KEY)||[];
 let challenge = null;
 let scores = [];
 let challengeType = 'public';
+let _adminUnlocked = false;
 let currentQ = 0;
 let playerAnswers = [];
 let selectedAnswer = null;
@@ -506,6 +521,7 @@ function localReset(){
 
 // ─── Delete modal ─────────────────────────────────────────────────────────────
 function openDeleteModal(){
+  _adminUnlocked=false;
   renderDeleteModal('public');
   document.getElementById('deleteModal').classList.remove('hidden');
 }
@@ -576,6 +592,22 @@ function renderDeleteModal(tab){
       </div>`;
     });
   }
+  let adminPrivRows='';
+  const privList=getAllPrivateChallenges();
+  if(privList.length===0){
+    adminPrivRows='<div class="empty" style="padding:8px 0">אין אתגרים פרטיים</div>';
+  } else {
+    privList.forEach((c,i)=>{
+      const clr=cols[i%cols.length];
+      adminPrivRows+=`<div class="del-row" style="border:1.5px solid rgba(204,153,255,.18);background:rgba(204,153,255,.04);margin-bottom:8px;justify-content:space-between">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.title)}</div>
+          <div style="color:rgba(255,255,255,.38);font-size:.7rem">${escapeHtml(c.creatorName||'')} · קוד: <span style="letter-spacing:2px;color:#cc99ff">${escapeHtml(c.code)}</span></div>
+        </div>
+        <button class="btn btn-danger" style="width:auto;padding:6px 14px;margin:0;font-size:.8rem" onclick="doAdminDeletePrivateByCode('${escapeHtml(c.code)}')">🗑️ מחק</button>
+      </div>`;
+    });
+  }
 
   document.getElementById('modal-body').innerHTML=`
     <div class="tab-row">
@@ -593,16 +625,21 @@ function renderDeleteModal(tab){
       <label class="label" style="color:#ff6aad">קוד מחיקה סודי</label>
       <input class="inp" id="privDelSecret" placeholder="קוד מחיקה שהגדרת..." style="margin-bottom:16px;border-color:rgba(255,106,173,.4)">
       <button class="btn btn-danger" onclick="doDeletePrivate()">🗑️ מחק אתגר פרטי לכולם</button>
-    `:`
-      <div style="color:#c0c8e8;font-size:.82rem;margin-bottom:14px">הכנס קוד Admin כדי למחוק כל אתגר ללא קוד מחיקה.</div>
-      <label class="label" style="color:#ff4466">🛡️ קוד Admin</label>
-      <input class="inp" id="adminCodeInp" placeholder="קוד Admin..." type="password" style="margin-bottom:18px;border-color:rgba(255,68,102,.4)">
+    `:${_adminUnlocked?`
+      <div style="color:#ff4466;font-size:.82rem;font-weight:700;margin-bottom:14px">🔓 Admin — גישה מלאה</div>
+      <div style="color:#c0c8e8;font-size:.8rem;font-weight:600;margin-bottom:8px">🌍 אתגרים ציבוריים (${pubList.length})</div>
       ${adminPublicRows}
       <div class="divider" style="margin:14px 0"></div>
-      <label class="label" style="color:#cc99ff">מחיקת אתגר פרטי לפי קוד גישה</label>
-      <input class="inp" id="adminPrivAccess" placeholder="קוד גישה (6 תווים)..." style="margin-bottom:10px;letter-spacing:4px;text-transform:uppercase;border-color:rgba(204,153,255,.4)" oninput="this.value=this.value.toUpperCase().slice(0,6)">
-      <button class="btn btn-danger" onclick="doAdminDeletePrivate()">🗑️ מחק אתגר פרטי</button>
-    `}`;
+      <div style="color:#cc99ff;font-size:.8rem;font-weight:600;margin-bottom:8px">🔐 אתגרים פרטיים (${privList.length})</div>
+      ${adminPrivRows}
+    `:`
+      <div style="color:#c0c8e8;font-size:.82rem;margin-bottom:14px">הכנס קוד Admin כדי לנהל את כל האתגרים.</div>
+      <label class="label" style="color:#ff4466">🛡️ קוד Admin</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input class="inp" id="adminCodeInp" placeholder="קוד Admin..." type="password" style="flex:1;margin:0;border-color:rgba(255,68,102,.4)" onkeydown="if(event.key==='Enter')adminLogin()">
+        <button class="btn btn-danger" style="width:auto;padding:0 18px;margin:0" onclick="adminLogin()">כניסה</button>
+      </div>
+    `}}`;
 }
 
 function checkDelMatch(id){
@@ -661,8 +698,27 @@ function doDeletePrivate(){
 }
 
 function isAdminCodeValid(){
+  if(_adminUnlocked) return true;
   const inp=document.getElementById('adminCodeInp');
   return inp && inp.value.trim()===ADMIN_CODE;
+}
+
+function adminLogin(){
+  const inp=document.getElementById('adminCodeInp');
+  if(!inp||inp.value.trim()!==ADMIN_CODE) return alert('קוד Admin שגוי.');
+  _adminUnlocked=true;
+  renderDeleteModal('admin');
+}
+
+function doAdminDeletePrivateByCode(code){
+  if(!_adminUnlocked) return;
+  const data=load(privKey(code));
+  if(!data) return alert('לא נמצא אתגר פרטי עם הקוד הזה.');
+  del(privScores(code));
+  del(privKey(code));
+  if(challenge&&challenge.code===code){challenge=null;scores=[];}
+  renderDeleteModal('admin');
+  renderHome();
 }
 
 function doAdminDeletePublic(id){
