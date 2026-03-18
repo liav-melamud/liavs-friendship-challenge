@@ -625,7 +625,7 @@ function renderDeleteModal(tab){
       <label class="label" style="color:#ff6aad">קוד מחיקה סודי</label>
       <input class="inp" id="privDelSecret" placeholder="קוד מחיקה שהגדרת..." style="margin-bottom:16px;border-color:rgba(255,106,173,.4)">
       <button class="btn btn-danger" onclick="doDeletePrivate()">🗑️ מחק אתגר פרטי לכולם</button>
-    `:${_adminUnlocked?`
+    `:_adminUnlocked?`
       <div style="color:#ff4466;font-size:.82rem;font-weight:700;margin-bottom:14px">🔓 Admin — גישה מלאה</div>
       <div style="color:#c0c8e8;font-size:.8rem;font-weight:600;margin-bottom:8px">🌍 אתגרים ציבוריים (${pubList.length})</div>
       ${adminPublicRows}
@@ -639,7 +639,7 @@ function renderDeleteModal(tab){
         <input class="inp" id="adminCodeInp" placeholder="קוד Admin..." type="password" style="flex:1;margin:0;border-color:rgba(255,68,102,.4)" onkeydown="if(event.key==='Enter')adminLogin()">
         <button class="btn btn-danger" style="width:auto;padding:0 18px;margin:0" onclick="adminLogin()">כניסה</button>
       </div>
-    `}}`;
+    `}`;
 }
 
 function checkDelMatch(id){
