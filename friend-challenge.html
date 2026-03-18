@@ -164,6 +164,16 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
     <label class="label">השם שלך</label>
     <input class="inp" id="playerNameInp" placeholder="כתוב את שמך..." style="margin-bottom:20px" onkeydown="if(event.key==='Enter')startPlaying()">
     <button class="btn btn-primary" onclick="startPlaying()">🎯 התחל!</button>
+    <div style="text-align:center;margin-top:18px">
+      <span style="cursor:pointer;color:rgba(255,255,255,.18);font-size:.7rem;user-select:none" onclick="document.getElementById('play-admin-box').classList.toggle('hidden')">🛡️ Admin</span>
+    </div>
+    <div id="play-admin-box" class="hidden" style="margin-top:8px">
+      <div id="play-admin-locked-ui">
+        <input class="inp" id="playAdminCodeInp" placeholder="קוד Admin..." type="password" style="margin-bottom:8px;border-color:rgba(255,68,102,.3)" onkeydown="if(event.key==='Enter')unlockPlayAdmin()">
+        <button class="btn btn-danger" style="padding:9px 16px;font-size:.85rem" onclick="unlockPlayAdmin()">כניסה</button>
+      </div>
+      <div id="play-admin-unlocked-ui" class="hidden" style="color:#ff4466;font-size:.82rem;font-weight:700;text-align:center;padding:6px 0">🔓 Admin פעיל — תשובות יוצגו בזמן המשחק</div>
+    </div>
   </div>
 
   <!-- PLAY -->
@@ -175,6 +185,7 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
     <div id="play-creator" style="color:#a8b2d8;font-size:.78rem;text-align:center;margin-bottom:14px"></div>
     <div class="progress" id="progress-dots"></div>
     <div id="play-question" class="q-text"></div>
+    <div id="play-admin-hint" class="hidden" style="background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.22);border-radius:10px;padding:8px 14px;margin-bottom:10px;color:#ff8aad;font-size:.82rem;font-weight:700;text-align:center"></div>
     <div class="ans-row">
       <button class="ans-btn ans-t" id="ansTrue" onclick="selectAnswer(true)">✓ נכון</button>
       <button class="ans-btn ans-f" id="ansFalse" onclick="selectAnswer(false)">✗ לא נכון</button>
@@ -251,6 +262,8 @@ let challenge = null;
 let scores = [];
 let challengeType = 'public';
 let _adminUnlocked = false;
+let _playAdminUnlocked = false;
+const PLAY_ADMIN_CODE = '3232';
 let currentQ = 0;
 let playerAnswers = [];
 let selectedAnswer = null;
@@ -403,6 +416,14 @@ function renderEnterName(){
   document.getElementById('en-title').textContent=`"${challenge.title}"`;
 }
 
+function unlockPlayAdmin(){
+  const inp=document.getElementById('playAdminCodeInp');
+  if(!inp||inp.value.trim()!==PLAY_ADMIN_CODE) return alert('קוד שגוי.');
+  _playAdminUnlocked=true;
+  document.getElementById('play-admin-locked-ui').classList.add('hidden');
+  document.getElementById('play-admin-unlocked-ui').classList.remove('hidden');
+}
+
 function startPlaying(){
   const name=document.getElementById('playerNameInp').value.trim();
   if(!name) return alert('כתוב את שמך');
@@ -417,6 +438,15 @@ function renderPlayScreen(){
   document.getElementById('play-player').textContent=playerName;
   document.getElementById('play-creator').textContent=`האתגר של ${challenge.creatorName}`;
   document.getElementById('play-question').textContent=challenge.questions[currentQ].text;
+  // admin hint
+  const hint=document.getElementById('play-admin-hint');
+  if(_playAdminUnlocked){
+    const correct=challenge.questions[currentQ].answer;
+    hint.textContent=`🔓 תשובה נכונה: ${correct?'✓ נכון':'✗ לא נכון'}`;
+    hint.classList.remove('hidden');
+  } else {
+    hint.classList.add('hidden');
+  }
   // progress
   let dots='';
   for(let i=0;i<QUESTION_COUNT;i++) dots+=`<div class="pdot${i<=currentQ?' done':''}"></div>`;
@@ -442,6 +472,7 @@ function nextQuestion(){
   if(currentQ<QUESTION_COUNT-1){currentQ++;renderPlayScreen();}
   else{
     const score=playerAnswers.filter((a,i)=>a===challenge.questions[i].answer).length;
+    _playAdminUnlocked=false;
     saveScore(playerName,score);
     renderResult(score);
     showScreen('result');
