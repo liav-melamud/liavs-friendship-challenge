@@ -773,6 +773,29 @@ function playWithCode(){
   showScreen('enter-name');
 }
 
+// ─── Undo toast ───────────────────────────────────────────────────────────────
+let _undoTimer=null,_undoFn=null;
+function showUndoToast(undoFn){
+  if(_undoTimer){clearInterval(_undoTimer);_undoTimer=null;}
+  const old=document.getElementById('undoToast');
+  if(old) old.remove();
+  _undoFn=undoFn;
+  let secs=20;
+  const t=document.createElement('div');
+  t.id='undoToast';
+  t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(14,18,32,.97);border:1.5px solid rgba(46,247,160,.45);border-radius:14px;padding:13px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 36px rgba(0,0,0,.55);backdrop-filter:blur(14px);min-width:240px;max-width:90vw';
+  const upd=()=>{t.innerHTML=`<span style="font-size:1.1rem">✅</span><span style="font-family:'Fredoka One',cursive;color:#e2e8f0;font-size:.9rem;flex:1">נמחק בהצלחה</span><span style="color:#a8b8d8;font-size:.75rem;min-width:26px">${secs}s</span><button onclick="undoDelete()" style="background:linear-gradient(135deg,#ffb347,#ff6a00);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-family:'Fredoka One',cursive;font-size:.82rem;cursor:pointer">↩️ ביטול</button>`;};
+  upd();
+  document.body.appendChild(t);
+  _undoTimer=setInterval(()=>{secs--;if(secs<=0){clearInterval(_undoTimer);_undoTimer=null;_undoFn=null;t.remove();}else upd();},1000);
+}
+function undoDelete(){
+  if(_undoTimer){clearInterval(_undoTimer);_undoTimer=null;}
+  const t=document.getElementById('undoToast');
+  if(t) t.remove();
+  if(_undoFn){const fn=_undoFn;_undoFn=null;fn();}
+}
+
 // ─── Local reset ─────────────────────────────────────────────────────────────
 function localReset(){
   const pub=load(PUB_KEY)||[];
@@ -806,6 +829,17 @@ function localReset(){
 function doLocalReset(){
   const checks=[...document.querySelectorAll('.reset-chk:checked')];
   if(checks.length===0){alert('לא סימנת אף אתגר');return;}
+  const savedPub=[],savedPriv=[];
+  checks.forEach(chk=>{
+    if(chk.dataset.type==='pub'){
+      const id=chk.dataset.id;
+      const c=(load(PUB_KEY)||[]).find(x=>String(x.id)===String(id));
+      if(c) savedPub.push({c,sc:load(pubScores(id))});
+    } else {
+      const code=chk.dataset.code;
+      savedPriv.push({code,data:load(privKey(code)),sc:load(privScores(code))});
+    }
+  });
   checks.forEach(chk=>{
     if(chk.dataset.type==='pub'){
       const id=chk.dataset.id;
@@ -822,6 +856,21 @@ function doLocalReset(){
   publicChallenges=load(PUB_KEY)||[];
   document.getElementById('resetModal').classList.add('hidden');
   renderHome();
+  showUndoToast(()=>{
+    let arr=load(PUB_KEY)||[];
+    savedPub.forEach(({c,sc})=>{
+      if(!arr.find(x=>String(x.id)===String(c.id))) arr.push(c);
+      if(sc) store(pubScores(c.id),sc);
+    });
+    store(PUB_KEY,arr);
+    savedPriv.forEach(({code,data,sc})=>{
+      if(data) store(privKey(code),data);
+      if(sc) store(privScores(code),sc);
+    });
+    publicChallenges=load(PUB_KEY)||[];
+    renderHome();
+    localReset();
+  });
 }
 
 // ─── Delete modal ─────────────────────────────────────────────────────────────
@@ -845,8 +894,10 @@ function openSingleDelete(){
 function doSingleDelete(){
   const typed=document.getElementById('singleDelCode').value.trim();
   if(typed && typed===challenge.deleteCode){
-    const key=challenge.type==='public'?pubScores(challenge.id):privScores(challenge.code);
-    del(key);
+    const savedChallenge={...challenge};
+    const scoreKey=challenge.type==='public'?pubScores(challenge.id):privScores(challenge.code);
+    const savedSc=load(scoreKey);
+    del(scoreKey);
     if(challenge.type==='public'){
       publicChallenges=publicChallenges.filter(c=>c.id!==challenge.id);
       store(PUB_KEY,publicChallenges);
@@ -856,6 +907,18 @@ function doSingleDelete(){
     document.getElementById('deleteModal').classList.add('hidden');
     challenge=null; scores=[];
     showScreen('home');
+    showUndoToast(()=>{
+      if(savedChallenge.type==='public'){
+        let arr=load(PUB_KEY)||[];
+        if(!arr.find(c=>c.id===savedChallenge.id)) arr.push(savedChallenge);
+        store(PUB_KEY,arr);
+      } else {
+        store(privKey(savedChallenge.code),savedChallenge);
+      }
+      if(savedSc) store(scoreKey,savedSc);
+      publicChallenges=load(PUB_KEY)||[];
+      renderHome();
+    });
   } else {
     alert('קוד מחיקה שגוי. האתגר לא נמחק.');
   }
@@ -973,19 +1036,35 @@ function checkDelMatch(id){
 
 function doDeleteByCodes(){
   const pubList=load(PUB_KEY)||[];
+  const saved=[];
   let deleted=0;
   const remaining=pubList.filter(c=>{
     const inp=document.getElementById(`delcode_${c.id}`);
     if(!inp) return true;
-    if(inp.value.trim()===c.deleteCode){del(pubScores(c.id));deleted++;return false;}
+    if(inp.value.trim()===c.deleteCode){
+      saved.push({c,sc:load(pubScores(c.id))});
+      del(pubScores(c.id));
+      deleted++;
+      return false;
+    }
     return true;
   });
   if(deleted===0) return alert('אף קוד לא תואם. שום דבר לא נמחק.');
   store(PUB_KEY,remaining);
   publicChallenges=remaining;
   document.getElementById('deleteModal').classList.add('hidden');
-  alert(`✅ ${deleted} אתגרים נמחקו לכולם!`);
   renderHome();
+  showUndoToast(()=>{
+    let arr=load(PUB_KEY)||[];
+    saved.forEach(({c,sc})=>{
+      if(!arr.find(x=>x.id===c.id)) arr.push(c);
+      if(sc) store(pubScores(c.id),sc);
+    });
+    store(PUB_KEY,arr);
+    publicChallenges=load(PUB_KEY)||[];
+    renderHome();
+    openDeleteModal();
+  });
 }
 
 function doDeletePrivate(){
@@ -996,10 +1075,17 @@ function doDeletePrivate(){
   const data=load(privKey(code));
   if(!data) return alert('לא נמצא אתגר פרטי עם הקוד הזה.');
   if(data.deleteCode!==secret) return alert('קוד המחיקה שגוי. האתגר לא נמחק.');
+  const savedSc=load(privScores(code));
   del(privScores(code));
   del(privKey(code));
   document.getElementById('deleteModal').classList.add('hidden');
-  alert('✅ האתגר הפרטי נמחק לכולם!');
+  renderHome();
+  showUndoToast(()=>{
+    store(privKey(code),data);
+    if(savedSc) store(privScores(code),savedSc);
+    renderHome();
+    openDeleteModal();
+  });
 }
 
 function isAdminCodeValid(){
@@ -1019,11 +1105,18 @@ function doAdminDeletePrivateByCode(code){
   if(!_adminUnlocked) return;
   const data=load(privKey(code));
   if(!data) return alert('לא נמצא אתגר פרטי עם הקוד הזה.');
+  const savedSc=load(privScores(code));
   del(privScores(code));
   del(privKey(code));
   if(challenge&&challenge.code===code){challenge=null;scores=[];}
-  renderDeleteModal('admin');
+  document.getElementById('deleteModal').classList.add('hidden');
   renderHome();
+  showUndoToast(()=>{
+    store(privKey(code),data);
+    if(savedSc) store(privScores(code),savedSc);
+    renderHome();
+    openDeleteModal();
+  });
 }
 
 function doAdminDeletePublic(id){
@@ -1031,12 +1124,22 @@ function doAdminDeletePublic(id){
   const pubList=load(PUB_KEY)||[];
   const target=pubList.find(c=>c.id===id);
   if(!target) return;
+  const savedSc=load(pubScores(id));
   del(pubScores(id));
   publicChallenges=pubList.filter(c=>c.id!==id);
   store(PUB_KEY,publicChallenges);
   if(challenge&&challenge.id===id){challenge=null;scores=[];}
   document.getElementById('deleteModal').classList.add('hidden');
   renderHome();
+  showUndoToast(()=>{
+    let arr=load(PUB_KEY)||[];
+    if(!arr.find(c=>c.id===id)) arr.push(target);
+    store(PUB_KEY,arr);
+    if(savedSc) store(pubScores(id),savedSc);
+    publicChallenges=load(PUB_KEY)||[];
+    renderHome();
+    openDeleteModal();
+  });
 }
 
 function doAdminDeletePrivate(){
@@ -1045,11 +1148,18 @@ function doAdminDeletePrivate(){
   if(!code) return alert('הכנס קוד גישה לאתגר');
   const data=load(privKey(code));
   if(!data) return alert('לא נמצא אתגר פרטי עם הקוד הזה.');
+  const savedSc=load(privScores(code));
   del(privScores(code));
   del(privKey(code));
   if(challenge&&challenge.code===code){challenge=null;scores=[];}
   document.getElementById('deleteModal').classList.add('hidden');
   renderHome();
+  showUndoToast(()=>{
+    store(privKey(code),data);
+    if(savedSc) store(privScores(code),savedSc);
+    renderHome();
+    openDeleteModal();
+  });
 }
 
 function closeModal(e){if(e.target===document.getElementById('deleteModal'))document.getElementById('deleteModal').classList.add('hidden');}
