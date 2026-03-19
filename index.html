@@ -270,7 +270,34 @@ let selectedAnswer = null;
 let playerName = '';
 let showAllPublic = false;
 
-// ─── Screen routing ─────────────────────────────────────────────────────────
+// ─── Load challenge from URL param ─────────────────────────────────────────
+(function(){
+  try{
+    const params=new URLSearchParams(window.location.search);
+    const c=params.get('c');
+    if(c){
+      const data=JSON.parse(decodeURIComponent(escape(atob(c))));
+      if(data&&data.title&&data.questions){
+        challenge=data;
+        scores=challenge.type==='private'
+          ?load(privScores(challenge.code))||[]
+          :load(pubScores(challenge.id))||[];
+        document.getElementById('playerNameInp').value='';
+        window.addEventListener('DOMContentLoaded',()=>{
+          renderEnterName();
+          showScreen('enter-name');
+        },{once:true});
+        // if DOM already ready
+        if(document.readyState!=='loading'){
+          renderEnterName();
+          showScreen('enter-name');
+        }
+      }
+    }
+  }catch(e){}
+})();
+
+// ─── Screen routing ────────────────────────────────────────────────────────
 const screens = ['home','create','created','enter-name','play','result','leaderboard'];
 function showScreen(name){
   screens.forEach(s=>document.getElementById('screen-'+s).classList.add('hidden'));
