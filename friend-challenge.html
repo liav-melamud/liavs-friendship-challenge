@@ -240,6 +240,19 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
   </div>
 </div>
 
+<!-- RESET MODAL -->
+<div id="resetModal" class="modal-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;overflow-y:auto">
+    <div class="title grad-text" style="font-family:'Fredoka One',cursive;font-size:1.3rem;margin-bottom:4px;-webkit-text-fill-color:unset">🔄 איפוס אתגר אצלי</div>
+    <div style="color:#a8b8d8;font-size:.78rem;margin-bottom:14px;text-align:center">בחר אתגר למחוק מהזיכרון שלך</div>
+    <div id="reset-list"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-danger" style="flex:1" onclick="doLocalReset()">🗑️ מחק אצלי</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('resetModal').classList.add('hidden')">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── Storage (localStorage fallback) ───────────────────────────────────────
 const PUB_KEY = 'fc_public_challenges';
@@ -451,7 +464,7 @@ function renderHome(){
   publicChallenges = load(PUB_KEY)||[];
   const list = document.getElementById('public-list');
   const btnReset = document.getElementById('btnLocalReset');
-  if(publicChallenges.length>0) btnReset.classList.remove('hidden');
+  if(publicChallenges.length>0 || getAllPrivateChallenges().length>0) btnReset.classList.remove('hidden');
   else btnReset.classList.add('hidden');
 
   const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
@@ -759,7 +772,52 @@ function playWithCode(){
 
 // ─── Local reset ─────────────────────────────────────────────────────────────
 function localReset(){
-  publicChallenges=[];
+  const pub=load(PUB_KEY)||[];
+  const priv=getAllPrivateChallenges();
+  if(pub.length===0&&priv.length===0){alert('אין אתגרים שמורים אצלך.');return;}
+  const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
+  let html='';
+  pub.forEach((c,i)=>{
+    const clr=cols[i%cols.length];
+    html+=`<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:7px;cursor:pointer">
+      <input type="checkbox" class="reset-chk" data-type="pub" data-id="${escapeHtml(c.id)}" style="width:16px;height:16px;accent-color:${clr};cursor:pointer">
+      <div style="flex:1">
+        <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.9rem">${escapeHtml(c.title)}</div>
+        <div style="color:#a8b8d8;font-size:.72rem">🌍 ציבורי &middot; ${escapeHtml(c.creatorName)}</div>
+      </div>
+    </label>`;
+  });
+  priv.forEach((c,i)=>{
+    const clr=cols[(pub.length+i)%cols.length];
+    html+=`<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:7px;cursor:pointer">
+      <input type="checkbox" class="reset-chk" data-type="priv" data-code="${escapeHtml(c.code)}" style="width:16px;height:16px;accent-color:${clr};cursor:pointer">
+      <div style="flex:1">
+        <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.9rem">${escapeHtml(c.title)}</div>
+        <div style="color:#a8b8d8;font-size:.72rem">🔐 פרטי &middot; ${escapeHtml(c.creatorName)} &middot; ${escapeHtml(c.code)}</div>
+      </div>
+    </label>`;
+  });
+  document.getElementById('reset-list').innerHTML=html;
+  document.getElementById('resetModal').classList.remove('hidden');
+}
+function doLocalReset(){
+  const checks=[...document.querySelectorAll('.reset-chk:checked')];
+  if(checks.length===0){alert('לא סימנת אף אתגר');return;}
+  checks.forEach(chk=>{
+    if(chk.dataset.type==='pub'){
+      const id=chk.dataset.id;
+      let arr=load(PUB_KEY)||[];
+      arr=arr.filter(c=>String(c.id)!==String(id));
+      store(PUB_KEY,arr);
+      del(pubScores(id));
+    } else {
+      const code=chk.dataset.code;
+      del(privKey(code));
+      del(privScores(code));
+    }
+  });
+  publicChallenges=load(PUB_KEY)||[];
+  document.getElementById('resetModal').classList.add('hidden');
   renderHome();
 }
 
