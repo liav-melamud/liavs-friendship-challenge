@@ -105,6 +105,21 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
       <button id="btnLocalReset" class="btn btn-secondary hidden" style="font-size:.85rem;padding:11px 10px;border:1.5px solid rgba(255,180,0,.4);color:#ffb347" onclick="localReset()">🔄 איפוס רק אצלי</button>
       <button class="btn btn-danger" style="font-size:.85rem;padding:11px 10px" onclick="openDeleteModal()">🗑️ מחיקת אתגרים</button>
     </div>
+    <div style="text-align:center;margin-top:14px">
+      <span style="cursor:pointer;color:rgba(255,255,255,.15);font-size:.68rem;user-select:none" onclick="toggleHomeAdminBox()">🛡️ ניהול</span>
+    </div>
+    <div id="home-admin-box" class="hidden" style="margin-top:8px;border:1.5px solid rgba(255,100,80,.2);border-radius:14px;padding:12px">
+      <div id="home-admin-locked">
+        <div style="color:#c0c8e8;font-size:.8rem;margin-bottom:8px;text-align:center">קוד ניהול</div>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="homeAdminCodeInp" placeholder="קוד..." type="password" style="flex:1;margin:0;border-color:rgba(255,68,102,.3)" onkeydown="if(event.key==='Enter')homeAdminLogin()">
+          <button class="btn btn-danger" style="width:auto;padding:0 16px;margin:0" onclick="homeAdminLogin()">כניסה</button>
+        </div>
+      </div>
+      <div id="home-admin-panel" class="hidden">
+        <div style="color:#ff4466;font-size:.8rem;font-weight:700;margin-bottom:10px;text-align:center">🔒 חסימת אתגרים</div>
+      </div>
+    </div>
 
   </div>
 
@@ -233,6 +248,8 @@ const privScores = c=>`fc_privsc_${c}`;
 const pubScores = id=>`fc_pubsc_${id}`;
 
 const ADMIN_CODE = '2323';
+const HOME_ADMIN_CODE = '2233';
+const BLOCK_KEY = 'fc_blocked';
 
 function store(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
 function load(key){try{const v=localStorage.getItem(key);return v?JSON.parse(v):null}catch(e){return null}}
@@ -262,6 +279,7 @@ let challenge = null;
 let scores = [];
 let challengeType = 'public';
 let _adminUnlocked = false;
+let _homeAdminUnlocked = false;
 let _playAdminUnlocked = false;
 const PLAY_ADMIN_CODE = '3232';
 let currentQ = 0;
@@ -269,6 +287,123 @@ let playerAnswers = [];
 let selectedAnswer = null;
 let playerName = '';
 let showAllPublic = false;
+
+// ─── Block helpers ─────────────────────────────────────────────────────────
+function getBlocks(){return load(BLOCK_KEY)||{};}
+function isBlocked(id){
+  const blocks=getBlocks();
+  if(!blocks[id]) return false;
+  if(blocks[id]===true) return true;
+  if(Date.now()<blocks[id]) return true;
+  const b=getBlocks(); delete b[id]; store(BLOCK_KEY,b);
+  return false;
+}
+function blockChallenge(id,until){
+  const b=getBlocks();
+  b[id]=until===null?true:until;
+  store(BLOCK_KEY,b);
+}
+function unblockChallenge(id){
+  const b=getBlocks(); delete b[id]; store(BLOCK_KEY,b);
+}
+function blockLabel(id){
+  const blocks=getBlocks();
+  if(!blocks[id]) return null;
+  if(blocks[id]===true) return '◔ חסום ללא הגבלה';
+  const rem=blocks[id]-Date.now();
+  if(rem<=0) return null;
+  const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000);
+  return `◔ חסום עוד ${h?h+' שעות ':''}${m} דקות`;
+}
+
+// ─── Home Admin ────────────────────────────────────────────────────────────
+function toggleHomeAdminBox(){
+  const box=document.getElementById('home-admin-box');
+  if(box.classList.contains('hidden')){
+    if(!_homeAdminUnlocked){
+      document.getElementById('home-admin-locked').classList.remove('hidden');
+      document.getElementById('home-admin-panel').classList.add('hidden');
+    }
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+  }
+}
+function homeAdminLogin(){
+  const inp=document.getElementById('homeAdminCodeInp');
+  if(!inp||inp.value.trim()!==HOME_ADMIN_CODE) return alert('קוד שגוי.');
+  _homeAdminUnlocked=true;
+  document.getElementById('home-admin-locked').classList.add('hidden');
+  document.getElementById('home-admin-panel').classList.remove('hidden');
+  renderHomeAdminPanel();
+}
+function renderHomeAdminPanel(){
+  const pub=load(PUB_KEY)||[];
+  const priv=getAllPrivateChallenges();
+  const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
+  let html='';
+  if(pub.length===0&&priv.length===0){
+    html='<div style="color:#a8b8d8;font-size:.82rem;text-align:center;padding:8px 0">אין אתגרים</div>';
+  }
+  pub.forEach((c,i)=>{
+    const clr=cols[i%cols.length];
+    const blocked=isBlocked(c.id);
+    const lbl=blockLabel(c.id);
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:8px 10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.title)}</div>
+        <div style="color:#a8b8d8;font-size:.7rem">🌍 ציבורי · ${escapeHtml(c.creatorName)}${lbl?` <span style="color:#ff6aad">${lbl}</span>`:''}</div>
+      </div>
+      ${blocked
+        ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${c.id}');renderHomeAdminPanel();renderHome()">שחרר</button>`
+        :`<select id="bDur_${c.id}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 6px;font-size:.75rem;cursor:pointer">
+          <option value="30">חסום 30 דק</option>
+          <option value="60">שעה</option>
+          <option value="180">3 שעות</option>
+          <option value="720">12 שעות</option>
+          <option value="1440">יום</option>
+          <option value="0">ללא הגבלה</option>
+        </select>
+        <button class="btn btn-danger" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem" onclick="doBlock('${c.id}',false)">חסום</button>`
+      }
+    </div>`;
+  });
+  priv.forEach((c,i)=>{
+    const clr=cols[(pub.length+i)%cols.length];
+    const bid='priv_'+c.code;
+    const blocked=isBlocked(bid);
+    const lbl=blockLabel(bid);
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:8px 10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.title)}</div>
+        <div style="color:#a8b8d8;font-size:.7rem">🔐 פרטי · ${escapeHtml(c.creatorName)} · ${escapeHtml(c.code)}${lbl?` <span style="color:#ff6aad">${lbl}</span>`:''}</div>
+      </div>
+      ${blocked
+        ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${bid}');renderHomeAdminPanel();renderHome()">שחרר</button>`
+        :`<select id="bDur_${bid}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 6px;font-size:.75rem;cursor:pointer">
+          <option value="30">חסום 30 דק</option>
+          <option value="60">שעה</option>
+          <option value="180">3 שעות</option>
+          <option value="720">12 שעות</option>
+          <option value="1440">יום</option>
+          <option value="0">ללא הגבלה</option>
+        </select>
+        <button class="btn btn-danger" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem" onclick="doBlock('${bid}',true)">חסום</button>`
+      }
+    </div>`;
+  });
+  document.getElementById('home-admin-panel').innerHTML=html;
+}
+function doBlock(id,isPriv){
+  const selId='bDur_'+id;
+  const sel=document.getElementById(selId);
+  if(!sel) return;
+  const mins=parseInt(sel.value);
+  const until=mins===0?true:Date.now()+mins*60000;
+  blockChallenge(id,until===true?null:until);
+  renderHomeAdminPanel();
+  renderHome();
+}
 
 // ─── Load challenge from URL param ─────────────────────────────────────────
 (function(){
@@ -323,6 +458,19 @@ function renderHome(){
   const shown = showAllPublic ? publicChallenges.slice().reverse() : publicChallenges.slice().reverse().slice(0,3);
   let html = shown.map((ch,i)=>{
     const clr=cols[i%cols.length],bg=bgs[i%bgs.length],br=brs[i%brs.length];
+    const blocked=isBlocked(ch.id);
+    const lbl=blockLabel(ch.id);
+    if(blocked){
+      return `<div class="pub-card" style="border:1.5px solid rgba(255,68,102,.3);background:rgba(255,68,102,.05);opacity:.6;cursor:not-allowed">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Fredoka One',cursive;color:#ff6aad;font-size:1.05rem">${escapeHtml(ch.title)}</div>
+            <div style="color:#ff6aad;font-size:.75rem;margin-top:2px">🔒 ${lbl||'חסום'}</div>
+          </div>
+          <div style="color:#ff6aad;font-size:1.4rem;opacity:.6">🔒</div>
+        </div>
+      </div>`;
+    }
     return `<div class="pub-card" style="border:1.5px solid ${br};background:${bg}" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})'>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
@@ -343,7 +491,9 @@ function renderHome(){
 }
 
 function playPublic(chJson){
-  challenge=JSON.parse(chJson);
+  const ch=JSON.parse(chJson);
+  if(isBlocked(ch.id)) return alert('האתגר הזה חסום כרגע.');
+  challenge=ch;
   scores=load(pubScores(challenge.id))||[];
   document.getElementById('playerNameInp').value='';
   renderEnterName();
@@ -590,6 +740,7 @@ function playWithCode(){
   if(code.length<4) return alert('הכנס קוד תקין');
   const data=load(privKey(code));
   if(!data) return alert('קוד לא נמצא! בדוק שהקוד נכון.');
+  if(isBlocked('priv_'+code)) return alert('האתגר הזה חסום כרגע.');
   challenge=data;
   scores=load(privScores(code))||[];
   document.getElementById('playerNameInp').value='';
