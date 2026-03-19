@@ -678,6 +678,8 @@ function selectAnswer(v){
 
 function nextQuestion(){
   if(selectedAnswer===null) return;
+  const isOk=selectedAnswer===challenge.questions[currentQ].answer;
+  if(typeof showAnswerFeedback==='function') showAnswerFeedback(isOk);
   playerAnswers.push(selectedAnswer);
   if(currentQ<QUESTION_COUNT-1){currentQ++;renderPlayScreen();}
   else{
@@ -1170,6 +1172,130 @@ window.showScreen=function(name){
     }
   },1000);
   scheduleNext();
+})();
+
+// ─── Answer Feedback: Steve (נכון) / Creeper LOL (שגוי) ─────────────────────────────────────────────────
+(function(){
+  const PS=9,CP=13;
+  const STEVE=[
+    [0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],
+    [1,1,1,1,1,1,1,1],[1,2,2,1,1,2,2,1],[1,2,2,1,1,2,2,1],
+    [1,1,4,1,1,4,1,1],[1,3,1,3,3,1,3,1],[1,1,1,1,1,1,1,1],
+  ];
+  const SC=['#5c3317','#c68642','#1a1200','#703818','#b8722e'];
+  const CREEP=[
+    [1,1,1,1,1,1,1,1],[1,0,0,1,1,0,0,1],[1,0,0,1,1,0,0,1],
+    [1,1,1,0,0,1,1,1],[1,1,0,0,0,0,1,1],[1,0,0,1,1,0,0,1],
+    [1,0,1,1,1,1,0,1],[1,0,1,1,1,1,0,1],
+  ];
+  const ov=document.createElement('canvas');
+  ov.style.cssText='position:fixed;top:0;left:0;pointer-events:none;z-index:100';
+  ov.width=innerWidth;ov.height=innerHeight;
+  window.addEventListener('resize',()=>{ov.width=innerWidth;ov.height=innerHeight;});
+  document.body.appendChild(ov);
+  const ctx=ov.getContext('2d');
+  let fx=null;
+  function drawFace(face,cols,x,y,ps,alpha,sc){
+    sc=sc||1;
+    ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,alpha));
+    ctx.translate(x,y);ctx.scale(sc,sc);
+    const off=-4*ps;
+    face.forEach((row,r)=>row.forEach((cell,c)=>{
+      ctx.fillStyle=cols[cell];
+      ctx.fillRect(off+c*ps,off+r*ps,ps,ps);
+    }));
+    ctx.restore();
+  }
+  function drawTxt(text,x,y,alpha,sz,color){
+    ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,alpha));
+    ctx.font=`900 ${sz}px "Courier New",monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=10;
+    ctx.fillStyle=color||'#fff';ctx.fillText(text,x,y);
+    ctx.restore();
+  }
+  function rBox(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+  }
+  function makeParts(x,y){
+    const p=[];
+    CREEP.forEach((row,r)=>row.forEach((cell,c)=>{
+      if(Math.random()<.65){
+        const px=x+(c-4)*CP+CP/2,py=y+(r-4)*CP+CP/2;
+        const ang=Math.atan2(py-y,px-x)+(Math.random()-.5)*.9;
+        const spd=Math.random()*14+7;
+        p.push({x:px,y:py,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-Math.random()*4,
+          sz:CP*(Math.random()*.8+.4),col:cell?(Math.random()<.7?'#3d7a3d':'#5ec43c'):'#111',
+          alpha:1,life:0,maxLife:Math.random()*40+30});
+      }
+    }));
+    return p;
+  }
+  function tick(){
+    ctx.clearRect(0,0,ov.width,ov.height);
+    if(!fx){requestAnimationFrame(tick);return;}
+    const W=ov.width,H=ov.height,el=Date.now()-fx.t;
+    if(fx.type==='correct'){
+      const TOTAL=2600;
+      if(el>TOTAL){fx=null;requestAnimationFrame(tick);return;}
+      const fW=PS*8,tx=W-fW*.5-18,ty=H*.45;
+      let xPos,alpha;
+      if(el<350){const t=1-Math.pow(1-el/350,3);xPos=W+fW-(W+fW-tx)*t;alpha=el/350;}
+      else if(el<TOTAL-350){xPos=tx;alpha=1;}
+      else{const t=(el-(TOTAL-350))/350;xPos=tx+Math.pow(t,2)*(W+fW);alpha=1-t;}
+      drawFace(STEVE,SC,xPos,ty,PS,alpha);
+      if(el>250&&el<TOTAL-250){
+        const ba=Math.min(1,(el-250)/200)*Math.min(1,(TOTAL-250-el)/200)*alpha;
+        const bx=xPos-PS*5.5,by=ty-PS*6.5;
+        const bw=100,bh=42;
+        ctx.save();ctx.globalAlpha=ba*.95;ctx.fillStyle='#ffffff';
+        rBox(bx-bw/2,by-bh/2,bw,bh,10);ctx.fill();
+        ctx.beginPath();ctx.moveTo(bx+8,by+bh/2);ctx.lineTo(bx+22,by+bh/2+16);ctx.lineTo(bx+32,by+bh/2);ctx.fill();
+        ctx.restore();
+        drawTxt(String.fromCharCode(10003)+' נכון!',bx,by,ba,20,'#1db954');
+      }
+    } else if(fx.type==='wrong'){
+      const cx=W/2,cy=H/2-10;
+      if(el<450){
+        const t=el/450,sc=t<.55?t/.55*1.35:1.35-(t-.55)/.45*.35;
+        drawFace(CREEP,['#111','#3d8a3d'],cx,cy,CP,t,sc);
+      } else if(el<1700){
+        const t=(el-450)/1250,fl=Math.sin(t*Math.PI*8)*.5+.5;
+        const sc=1+Math.sin(t*Math.PI*7)*.04,gv=Math.floor(80+fl*130);
+        drawFace(CREEP,['#111',`rgb(30,${gv},30)`],cx,cy,CP,1,sc);
+        drawTxt('LOL',cx,cy-CP*5-Math.sin(t*Math.PI*3)*10,1,58,'#ff4466');
+      } else if(el<2000){
+        if(!fx.parts) fx.parts=makeParts(cx,cy);
+        const t=(el-1700)/300;
+        ctx.save();ctx.globalAlpha=(1-t)*.85;ctx.strokeStyle='#aaffaa';ctx.lineWidth=5;
+        ctx.beginPath();ctx.arc(cx,cy,t*200,0,Math.PI*2);ctx.stroke();ctx.restore();
+        ctx.save();ctx.globalAlpha=(1-t)*.45;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.restore();
+        drawTxt('LOL',cx,cy-CP*5-t*80,1-t,58,'#ff4466');
+      } else if(el<3900){
+        if(!fx.parts){fx=null;requestAnimationFrame(tick);return;}
+        const sw=(el-2000)/1900;
+        ctx.save();ctx.globalAlpha=(1-sw)*.28;ctx.strokeStyle='#7aff7a';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(cx,cy,sw*270,0,Math.PI*2);ctx.stroke();ctx.restore();
+        fx.parts.forEach(p=>{
+          p.life++;p.x+=p.vx;p.y+=p.vy;p.vy+=.27;p.vx*=.97;
+          p.alpha=1-p.life/p.maxLife;
+          if(p.alpha>0){ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.col;
+            ctx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);ctx.restore();}
+        });
+        fx.parts=fx.parts.filter(p=>p.alpha>0);
+        const la=Math.max(0,1-(el-2000)/500);
+        if(la>0) drawTxt('LOL',cx,cy-CP*5-130,la,58,'#ff4466');
+        if(!fx.parts.length) fx=null;
+      } else fx=null;
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+  window.showAnswerFeedback=function(ok){fx={type:ok?'correct':'wrong',t:Date.now(),parts:null};};
 })();
 
 // Init
