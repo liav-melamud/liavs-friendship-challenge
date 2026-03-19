@@ -1088,12 +1088,14 @@ function doDeletePrivate(){
 function isAdminCodeValid(){
   if(_adminUnlocked) return true;
   const inp=document.getElementById('adminCodeInp');
-  return inp && inp.value.trim()===ADMIN_CODE;
+  const v=inp&&inp.value.trim();
+  return v===ADMIN_CODE||v===HOME_ADMIN_CODE;
 }
 
 function adminLogin(){
   const inp=document.getElementById('adminCodeInp');
-  if(!inp||inp.value.trim()!==ADMIN_CODE) return alert('קוד Admin שגוי.');
+  const v=inp&&inp.value.trim();
+  if(!v||!(v===ADMIN_CODE||v===HOME_ADMIN_CODE)) return alert('קוד Admin שגוי.');
   _adminUnlocked=true;
   renderDeleteModal('admin');
 }
