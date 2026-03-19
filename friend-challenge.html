@@ -280,6 +280,7 @@ let scores = [];
 let challengeType = 'public';
 let _adminUnlocked = false;
 let _homeAdminUnlocked = false;
+let _homeAdminInterval = null;
 let _playAdminUnlocked = false;
 const PLAY_ADMIN_CODE = '3232';
 let currentQ = 0;
@@ -325,8 +326,14 @@ function toggleHomeAdminBox(){
       document.getElementById('home-admin-panel').classList.add('hidden');
     }
     box.classList.remove('hidden');
+    if(_homeAdminInterval) clearInterval(_homeAdminInterval);
+    _homeAdminInterval=setInterval(()=>{
+      if(_homeAdminUnlocked) renderHomeAdminPanel();
+      renderHome();
+    },30000);
   } else {
     box.classList.add('hidden');
+    if(_homeAdminInterval){clearInterval(_homeAdminInterval);_homeAdminInterval=null;}
   }
 }
 function homeAdminLogin(){
