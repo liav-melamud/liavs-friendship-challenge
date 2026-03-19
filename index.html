@@ -1158,8 +1158,41 @@ window.showScreen=function(name){
     requestAnimationFrame(tick);
   }
   tick();
-  setTimeout(spawnCreeper,2000);
-  setInterval(spawnCreeper,10000);
+  // ספירה לאחור עם טיימר על היריק
+  const CYCLE=120,WARN=10;
+  const timerEl=document.createElement('div');
+  timerEl.style.cssText='position:fixed;bottom:14px;right:16px;z-index:99;font-family:"Courier New",monospace;font-size:.78rem;color:rgba(80,255,80,.55);pointer-events:none;letter-spacing:1px;transition:color .3s,opacity .3s;opacity:.7';
+  document.body.appendChild(timerEl);
+  let nextAt=Date.now()+CYCLE*1000;
+  function scheduleNext(){
+    nextAt=Date.now()+CYCLE*1000;
+  }
+  const origSpawn=spawnCreeper;
+  function spawnAndReschedule(){
+    spawnCreeper();
+    scheduleNext();
+  }
+  setInterval(()=>{
+    const rem=Math.max(0,Math.ceil((nextAt-Date.now())/1000));
+    if(rem<=WARN&&rem>0){
+      timerEl.textContent=`💣 Creeper... ${rem}`;
+      timerEl.style.color=rem<=3?`rgba(255,80,80,.95)`:`rgba(80,255,80,.85)`;
+      timerEl.style.opacity='1';
+      if(rem<=3)timerEl.style.textShadow='0 0 8px rgba(255,80,80,.7)';
+      else timerEl.style.textShadow='0 0 8px rgba(80,255,80,.5)';
+    } else if(rem===0){
+      timerEl.textContent='';
+    } else {
+      timerEl.textContent=`📽️ ${rem}s`;
+      timerEl.style.color='rgba(80,255,80,.45)';
+      timerEl.style.opacity='.6';
+      timerEl.style.textShadow='none';
+    }
+    if(Date.now()>=nextAt){
+      spawnAndReschedule();
+    }
+  },1000);
+  scheduleNext();
 })();
 
 // Init
