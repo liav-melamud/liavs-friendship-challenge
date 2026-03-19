@@ -414,6 +414,19 @@ function renderEnterName(){
   document.getElementById('en-badge').textContent=challenge.type==='public'?'🌍 ציבורי':'🔐 פרטי';
   document.getElementById('en-creator').textContent=challenge.creatorName;
   document.getElementById('en-title').textContent=`"${challenge.title}"`;
+  resetPlayAdminUI();
+}
+
+function resetPlayAdminUI(){
+  _playAdminUnlocked=false;
+  const box=document.getElementById('play-admin-box');
+  const locked=document.getElementById('play-admin-locked-ui');
+  const unlocked=document.getElementById('play-admin-unlocked-ui');
+  const inp=document.getElementById('playAdminCodeInp');
+  if(box) box.classList.add('hidden');
+  if(locked) locked.classList.remove('hidden');
+  if(unlocked) unlocked.classList.add('hidden');
+  if(inp) inp.value='';
 }
 
 function unlockPlayAdmin(){
@@ -472,7 +485,7 @@ function nextQuestion(){
   if(currentQ<QUESTION_COUNT-1){currentQ++;renderPlayScreen();}
   else{
     const score=playerAnswers.filter((a,i)=>a===challenge.questions[i].answer).length;
-    _playAdminUnlocked=false;
+    resetPlayAdminUI();
     saveScore(playerName,score);
     renderResult(score);
     showScreen('result');
