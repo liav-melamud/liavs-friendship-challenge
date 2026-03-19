@@ -165,7 +165,7 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
     <input class="inp" id="playerNameInp" placeholder="כתוב את שמך..." style="margin-bottom:20px" onkeydown="if(event.key==='Enter')startPlaying()">
     <button class="btn btn-primary" onclick="startPlaying()">🎯 התחל!</button>
     <div style="text-align:center;margin-top:18px">
-      <span style="cursor:pointer;color:rgba(255,255,255,.18);font-size:.7rem;user-select:none" onclick="document.getElementById('play-admin-box').classList.toggle('hidden')">🛡️ Admin</span>
+      <span style="cursor:pointer;color:rgba(255,255,255,.18);font-size:.7rem;user-select:none" onclick="togglePlayAdminBox()">🛡️ Admin</span>
     </div>
     <div id="play-admin-box" class="hidden" style="margin-top:8px">
       <div id="play-admin-locked-ui">
@@ -435,6 +435,21 @@ function unlockPlayAdmin(){
   _playAdminUnlocked=true;
   document.getElementById('play-admin-locked-ui').classList.add('hidden');
   document.getElementById('play-admin-unlocked-ui').classList.remove('hidden');
+}
+
+function togglePlayAdminBox(){
+  const box=document.getElementById('play-admin-box');
+  const isHidden=box.classList.contains('hidden');
+  if(isHidden){
+    // opening: always show locked state unless already unlocked
+    if(!_playAdminUnlocked){
+      document.getElementById('play-admin-locked-ui').classList.remove('hidden');
+      document.getElementById('play-admin-unlocked-ui').classList.add('hidden');
+    }
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+  }
 }
 
 function startPlaying(){
