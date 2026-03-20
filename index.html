@@ -354,6 +354,10 @@ function blockLabel(id){
   if(blocks[id]===true) return '◔ חסום ללא הגבלה';
   const rem=blocks[id]-Date.now();
   if(rem<=0) return null;
+  if(rem<60000){
+    const s=Math.ceil(rem/1000);
+    return `◔ חסום עוד ${s} שניות`;
+  }
   const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000);
   return `◔ חסום עוד ${h?h+' שעות ':''}${m} דקות`;
 }
@@ -371,7 +375,7 @@ function toggleHomeAdminBox(){
     _homeAdminInterval=setInterval(()=>{
       if(_homeAdminUnlocked) renderHomeAdminPanel();
       renderHome();
-    },30000);
+    },1000);
   } else {
     box.classList.add('hidden');
     if(_homeAdminInterval){clearInterval(_homeAdminInterval);_homeAdminInterval=null;}
