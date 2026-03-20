@@ -274,8 +274,13 @@ function saveCloudUrl(){
   const inp=document.getElementById('cloudUrlInp');
   const url=(inp?.value||'').trim().replace(/\/+$/,'');
   try{localStorage.setItem(CLOUD_URL_KEY,url);}catch(e){}
-  if(url){syncFromCloud(true);alert('✅ Firebase חובר! הדף מסנכרן כעת.');}
+  if(url){uploadLocalToCloud().then(()=>syncFromCloud(true)).then(()=>renderHomeAdminPanel());alert('✅ Firebase חובר! מעלה אתגרים קיימים...');}
   else alert('⚠️ Firebase URL הוסר.');
+}
+async function uploadLocalToCloud(){
+  const url=getCloudUrl();if(!url) return;
+  const local=load(PUB_KEY)||[];
+  for(const c of local) await cloudPut(c.id,c);
 }
 async function cloudFetchAll(){
   const url=getCloudUrl();if(!url) return null;
@@ -461,7 +466,9 @@ function renderHomeAdminPanel(){
       <button class="btn" style="width:auto;padding:5px 10px;margin:0;font-size:.72rem;background:rgba(0,229,255,.12);color:#00e5ff;border:1px solid rgba(0,229,255,.3);white-space:nowrap" onclick="saveCloudUrl()">💾 שמור</button>
     </div>
     <div style="color:#5a6a8a;font-size:.63rem;margin-top:4px">קבל URL בחינם: <a href="https://firebase.google.com" target="_blank" rel="noopener" style="color:#00e5ff;text-decoration:none">firebase.google.com</a> → Create project → Realtime Database</div>
-    ${getCloudUrl()?'<div style="color:#2ecc71;font-size:.68rem;margin-top:3px">✅ מחובר לענן</div>':'<div style="color:#ff9933;font-size:.68rem;margin-top:3px">⚠️ לא מחובר — אתגרים גלויים רק במכשיר זה</div>'}
+    ${getCloudUrl()?
+      '<div style="color:#2ecc71;font-size:.68rem;margin-top:3px">✅ מחובר לענן</div><button class="btn" style="width:100%;margin-top:7px;padding:7px;font-size:.75rem;background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="uploadLocalToCloud().then(()=>alert(\'✅ כל האתגרים המקומיים הועלו לענן!\'))">&#x2601;&#xFE0F; העלאת אתגרים קיימים לענן</button>'
+      :'<div style="color:#ff9933;font-size:.68rem;margin-top:3px">⚠️ לא מחובר — אתגרים גלויים רק במכשיר זה</div>'}
   </div>`;
   document.getElementById('home-admin-panel').innerHTML=html;
 }
