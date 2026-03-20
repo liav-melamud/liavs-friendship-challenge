@@ -1091,14 +1091,12 @@ function doDeletePrivate(){
 function isAdminCodeValid(){
   if(_adminUnlocked) return true;
   const inp=document.getElementById('adminCodeInp');
-  const v=inp&&inp.value.trim();
-  return v===ADMIN_CODE||v===HOME_ADMIN_CODE;
+  return inp && inp.value.trim()===ADMIN_CODE;
 }
 
 function adminLogin(){
   const inp=document.getElementById('adminCodeInp');
-  const v=inp&&inp.value.trim();
-  if(!v||!(v===ADMIN_CODE||v===HOME_ADMIN_CODE)) return alert('קוד Admin שגוי.');
+  if(!inp||inp.value.trim()!==ADMIN_CODE) return alert('קוד Admin שגוי.');
   _adminUnlocked=true;
   renderDeleteModal('admin');
 }
