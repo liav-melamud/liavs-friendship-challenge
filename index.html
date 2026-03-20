@@ -404,12 +404,11 @@ function renderHomeAdminPanel(){
       </div>
       ${blocked
         ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${c.id}');renderHomeAdminPanel();renderHome()">שחרר</button>`
-        :`<select id="bDur_${c.id}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 6px;font-size:.75rem;cursor:pointer">
-          <option value="30">חסום 30 דק</option>
-          <option value="60">שעה</option>
-          <option value="180">3 שעות</option>
-          <option value="720">12 שעות</option>
-          <option value="1440">יום</option>
+        :`<input type="number" id="bNum_${c.id}" min="1" max="60" value="1" style="width:46px;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px;font-size:.75rem;text-align:center">
+        <select id="bUnit_${c.id}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 5px;font-size:.75rem;cursor:pointer" onchange="document.getElementById('bNum_${c.id}').style.display=this.value==='0'?'none':'inline-block'">
+          <option value="1">דקות</option>
+          <option value="60">שעות</option>
+          <option value="1440">ימים</option>
           <option value="0">ללא הגבלה</option>
         </select>
         <button class="btn btn-danger" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem" onclick="doBlock('${c.id}',false)">חסום</button>`
@@ -428,12 +427,11 @@ function renderHomeAdminPanel(){
       </div>
       ${blocked
         ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${bid}');renderHomeAdminPanel();renderHome()">שחרר</button>`
-        :`<select id="bDur_${bid}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 6px;font-size:.75rem;cursor:pointer">
-          <option value="30">חסום 30 דק</option>
-          <option value="60">שעה</option>
-          <option value="180">3 שעות</option>
-          <option value="720">12 שעות</option>
-          <option value="1440">יום</option>
+        :`<input type="number" id="bNum_${bid}" min="1" max="60" value="1" style="width:46px;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px;font-size:.75rem;text-align:center">
+        <select id="bUnit_${bid}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 5px;font-size:.75rem;cursor:pointer" onchange="document.getElementById('bNum_${bid}').style.display=this.value==='0'?'none':'inline-block'">
+          <option value="1">דקות</option>
+          <option value="60">שעות</option>
+          <option value="1440">ימים</option>
           <option value="0">ללא הגבלה</option>
         </select>
         <button class="btn btn-danger" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem" onclick="doBlock('${bid}',true)">חסום</button>`
@@ -443,12 +441,18 @@ function renderHomeAdminPanel(){
   document.getElementById('home-admin-panel').innerHTML=html;
 }
 function doBlock(id,isPriv){
-  const selId='bDur_'+id;
-  const sel=document.getElementById(selId);
-  if(!sel) return;
-  const mins=parseInt(sel.value);
-  const until=mins===0?true:Date.now()+mins*60000;
-  blockChallenge(id,until===true?null:until);
+  const unitEl=document.getElementById('bUnit_'+id);
+  const numEl=document.getElementById('bNum_'+id);
+  if(!unitEl) return;
+  const unit=parseInt(unitEl.value);
+  let until;
+  if(unit===0){
+    until=null;
+  } else {
+    const num=Math.max(1,Math.min(60,parseInt(numEl?.value)||1));
+    until=Date.now()+num*unit*60000;
+  }
+  blockChallenge(id,until);
   renderHomeAdminPanel();
   renderHome();
 }
