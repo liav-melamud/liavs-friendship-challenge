@@ -477,9 +477,7 @@ function doBlock(id,isPriv){
     until=null;
   } else {
     const num=Math.max(1,Math.min(60,parseInt(numEl?.value)||1));
-    // שניות = 0.01667, דקות/שעות/ימים = 1/60/1440
-    const multiplier = unit === 0.01667 ? 1000 : 60000;
-    until=Date.now()+num*unit*multiplier;
+    until=Date.now()+num*unit*60000;
   }
   blockChallenge(id,until);
   renderHomeAdminPanel();
