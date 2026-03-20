@@ -309,7 +309,7 @@ async function syncFromCloud(andRender){
   store(PUB_KEY,publicChallenges);
   if(andRender) renderHome();
 }
-setInterval(()=>{if(getCloudUrl()) syncFromCloud(true);},30000);
+setInterval(()=>{if(getCloudUrl()) syncFromCloud(true);},5000);
 function getAllPrivateChallenges(){
   const privs=[];
   try{
@@ -488,15 +488,28 @@ function renderHomeAdminPanel(){
     </div>`;
   });
   html+=`<div style="margin-top:14px;border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
-    <div style="color:#00e5ff;font-size:.75rem;font-weight:700;margin-bottom:7px">☁️ סנכרון בין מכשירים (Firebase)</div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <input id="cloudUrlInp" value="${escapeHtml(getCloudUrl())}" placeholder="https://your-app-default-rtdb.firebaseio.com" style="flex:1;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(0,229,255,.25);border-radius:8px;padding:5px 8px;font-size:.7rem;min-width:0">
-      <button class="btn" style="width:auto;padding:5px 10px;margin:0;font-size:.72rem;background:rgba(0,229,255,.12);color:#00e5ff;border:1px solid rgba(0,229,255,.3);white-space:nowrap" onclick="saveCloudUrl()">💾 שמור</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="color:#00e5ff;font-size:.75rem;font-weight:700">☁️ סנכרון בין מכשירים</div>
+      ${getCloudUrl()
+        ?'<span style="color:#2ecc71;font-size:.65rem;font-weight:600">✅ מחובר • כל 5שנ</span>'
+        :'<span style="color:#ff9933;font-size:.65rem">⚠️ לא מוגדר</span>'
+      }
     </div>
-    <div style="color:#5a6a8a;font-size:.63rem;margin-top:4px">קבל URL בחינם: <a href="https://firebase.google.com" target="_blank" rel="noopener" style="color:#00e5ff;text-decoration:none">firebase.google.com</a> → Create project → Realtime Database</div>
-    ${getCloudUrl()?
-      '<div style="color:#2ecc71;font-size:.68rem;margin-top:3px">✅ מחובר לענן</div><button class="btn" style="width:100%;margin-top:7px;padding:7px;font-size:.75rem;background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="uploadLocalToCloud().then(()=>alert(\'✅ כל האתגרים המקומיים הועלו לענן!\'))">&#x2601;&#xFE0F; העלאת אתגרים קיימים לענן</button>'
-      :'<div style="color:#ff9933;font-size:.68rem;margin-top:3px">⚠️ לא מחובר — אתגרים גלויים רק במכשיר זה</div>'}
+    ${getCloudUrl()
+      ?`<button class="btn" style="width:100%;padding:7px;font-size:.75rem;background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.3);margin-bottom:5px" onclick="uploadLocalToCloud().then(()=>alert('✅ כל האתגרים המקומיים הועלו לענן!'))">&#x2601;&#xFE0F; העלאת אתגרים קיימים לענן</button>
+         <div style="text-align:left"><button onclick="document.getElementById('cloudSetupArea').classList.toggle('hidden')" style="background:none;border:none;color:#5a6a8a;font-size:.65rem;cursor:pointer;padding:0">⚙️ שנה URL</button></div>
+         <div id="cloudSetupArea" class="hidden" style="margin-top:6px">
+           <div style="display:flex;gap:6px">
+             <input id="cloudUrlInp" value="${escapeHtml(getCloudUrl())}" style="flex:1;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(0,229,255,.25);border-radius:8px;padding:5px 8px;font-size:.7rem;min-width:0">
+             <button class="btn" style="width:auto;padding:5px 10px;margin:0;font-size:.72rem;background:rgba(0,229,255,.12);color:#00e5ff;border:1px solid rgba(0,229,255,.3)" onclick="saveCloudUrl()">שמור</button>
+           </div>
+         </div>`
+      :`<div style="font-size:.65rem;color:#8892a4;margin-bottom:5px">צור פרוייקט Firebase בחינם: <a href="https://firebase.google.com" target="_blank" rel="noopener" style="color:#00e5ff">firebase.google.com</a> → Create project → Realtime Database</div>
+         <div style="display:flex;gap:6px">
+           <input id="cloudUrlInp" value="" placeholder="https://your-app-default-rtdb.firebaseio.com" style="flex:1;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(0,229,255,.25);border-radius:8px;padding:5px 8px;font-size:.7rem;min-width:0">
+           <button class="btn" style="width:auto;padding:5px 10px;margin:0;font-size:.72rem;background:rgba(0,229,255,.12);color:#00e5ff;border:1px solid rgba(0,229,255,.3)" onclick="saveCloudUrl()">💾 שמור</button>
+         </div>`
+    }
   </div>`;
   document.getElementById('home-admin-panel').innerHTML=html;
 }
