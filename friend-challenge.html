@@ -345,7 +345,7 @@ function toggleHomeAdminBox(){
     box.classList.remove('hidden');
     if(_homeAdminInterval) clearInterval(_homeAdminInterval);
     _homeAdminInterval=setInterval(()=>{
-      if(_homeAdminUnlocked) renderHomeAdminPanel();
+      if(_homeAdminUnlocked) refreshAdminLabels();
       renderHome();
     },1000);
   } else {
@@ -376,7 +376,7 @@ function renderHomeAdminPanel(){
     html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:8px 10px">
       <div style="flex:1;min-width:0">
         <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.title)}</div>
-        <div style="color:#a8b8d8;font-size:.7rem">🌍 ציבורי · ${escapeHtml(c.creatorName)}${lbl?` <span style="color:#ff6aad">${lbl}</span>`:''}</div>
+        <div style="color:#a8b8d8;font-size:.7rem">🌍 ציבורי · ${escapeHtml(c.creatorName)} <span id="blbl_${c.id}" style="color:#ff6aad">${lbl||''}</span></div>
       </div>
       ${blocked
         ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${c.id}');renderHomeAdminPanel();renderHome()">שחרר</button>`
@@ -400,7 +400,7 @@ function renderHomeAdminPanel(){
     html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:8px 10px">
       <div style="flex:1;min-width:0">
         <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(c.title)}</div>
-        <div style="color:#a8b8d8;font-size:.7rem">🔐 פרטי · ${escapeHtml(c.creatorName)} · ${escapeHtml(c.code)}${lbl?` <span style="color:#ff6aad">${lbl}</span>`:''}</div>
+        <div style="color:#a8b8d8;font-size:.7rem">🔐 פרטי · ${escapeHtml(c.creatorName)} · ${escapeHtml(c.code)} <span id="blbl_${bid}" style="color:#ff6aad">${lbl||''}</span></div>
       </div>
       ${blocked
         ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${bid}');renderHomeAdminPanel();renderHome()">שחרר</button>`
@@ -417,6 +417,27 @@ function renderHomeAdminPanel(){
     </div>`;
   });
   document.getElementById('home-admin-panel').innerHTML=html;
+}
+function refreshAdminLabels(){
+  const pub=load(PUB_KEY)||[];
+  const priv=getAllPrivateChallenges();
+  let needRender=false;
+  pub.forEach(c=>{
+    const el=document.getElementById('blbl_'+c.id);
+    if(!el) return;
+    const lbl=blockLabel(c.id);
+    if(!lbl && el.textContent) needRender=true;
+    else if(lbl) el.textContent=lbl;
+  });
+  priv.forEach(c=>{
+    const bid='priv_'+c.code;
+    const el=document.getElementById('blbl_'+bid);
+    if(!el) return;
+    const lbl=blockLabel(bid);
+    if(!lbl && el.textContent) needRender=true;
+    else if(lbl) el.textContent=lbl;
+  });
+  if(needRender) renderHomeAdminPanel();
 }
 function doBlock(id,isPriv){
   const unitEl=document.getElementById('bUnit_'+id);
