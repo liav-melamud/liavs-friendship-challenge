@@ -267,6 +267,44 @@ const BLOCK_KEY = 'fc_blocked';
 function store(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
 function load(key){try{const v=localStorage.getItem(key);return v?JSON.parse(v):null}catch(e){return null}}
 function del(key){try{localStorage.removeItem(key)}catch(e){}}
+// ─── Cloud Sync (Firebase Realtime Database REST API) ─────────────────────────
+const CLOUD_URL_KEY='fc_cloud_url';
+function getCloudUrl(){return(localStorage.getItem(CLOUD_URL_KEY)||'').replace(/\/+$/,'');}
+function saveCloudUrl(){
+  const inp=document.getElementById('cloudUrlInp');
+  const url=(inp?.value||'').trim().replace(/\/+$/,'');
+  try{localStorage.setItem(CLOUD_URL_KEY,url);}catch(e){}
+  if(url){syncFromCloud(true);alert('✅ Firebase חובר! הדף מסנכרן כעת.');}
+  else alert('⚠️ Firebase URL הוסר.');
+}
+async function cloudFetchAll(){
+  const url=getCloudUrl();if(!url) return null;
+  try{
+    const r=await fetch(url+'/challenges.json');
+    if(!r.ok) return null;
+    const d=await r.json();
+    return d?Object.values(d).filter(Boolean):[];
+  }catch(e){return null;}
+}
+async function cloudPut(id,data){
+  const url=getCloudUrl();if(!url) return;
+  try{await fetch(url+'/challenges/'+id+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}catch(e){}
+}
+async function cloudRemove(id){
+  const url=getCloudUrl();if(!url) return;
+  try{await fetch(url+'/challenges/'+id+'.json',{method:'DELETE'});}catch(e){}
+}
+function cloudRemoveSafe(id){
+  setTimeout(()=>{const stillLocal=(load(PUB_KEY)||[]).find(c=>c.id===id);if(!stillLocal)cloudRemove(id);},25000);
+}
+async function syncFromCloud(andRender){
+  const remote=await cloudFetchAll();
+  if(remote===null) return;
+  publicChallenges=remote;
+  store(PUB_KEY,publicChallenges);
+  if(andRender) renderHome();
+}
+setInterval(()=>{if(getCloudUrl()) syncFromCloud(true);},30000);
 function getAllPrivateChallenges(){
   const privs=[];
   try{
@@ -416,6 +454,15 @@ function renderHomeAdminPanel(){
       }
     </div>`;
   });
+  html+=`<div style="margin-top:14px;border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
+    <div style="color:#00e5ff;font-size:.75rem;font-weight:700;margin-bottom:7px">☁️ סנכרון בין מכשירים (Firebase)</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="cloudUrlInp" value="${escapeHtml(getCloudUrl())}" placeholder="https://your-app-default-rtdb.firebaseio.com" style="flex:1;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(0,229,255,.25);border-radius:8px;padding:5px 8px;font-size:.7rem;min-width:0">
+      <button class="btn" style="width:auto;padding:5px 10px;margin:0;font-size:.72rem;background:rgba(0,229,255,.12);color:#00e5ff;border:1px solid rgba(0,229,255,.3);white-space:nowrap" onclick="saveCloudUrl()">💾 שמור</button>
+    </div>
+    <div style="color:#5a6a8a;font-size:.63rem;margin-top:4px">קבל URL בחינם: <a href="https://firebase.google.com" target="_blank" rel="noopener" style="color:#00e5ff;text-decoration:none">firebase.google.com</a> → Create project → Realtime Database</div>
+    ${getCloudUrl()?'<div style="color:#2ecc71;font-size:.68rem;margin-top:3px">✅ מחובר לענן</div>':'<div style="color:#ff9933;font-size:.68rem;margin-top:3px">⚠️ לא מחובר — אתגרים גלויים רק במכשיר זה</div>'}
+  </div>`;
   document.getElementById('home-admin-panel').innerHTML=html;
 }
 function refreshAdminLabels(){
@@ -659,6 +706,7 @@ function handleCreateSubmit(){
   if(challengeType==='public'){
     publicChallenges.push(data);
     store(PUB_KEY,publicChallenges);
+    cloudPut(id,data);
   } else {
     store(privKey(code),data);
   }
@@ -973,6 +1021,7 @@ function doSingleDelete(){
     const savedSc=load(scoreKey);
     del(scoreKey);
     if(challenge.type==='public'){
+      cloudRemoveSafe(challenge.id);
       publicChallenges=publicChallenges.filter(c=>c.id!==challenge.id);
       store(PUB_KEY,publicChallenges);
     } else {
@@ -1124,6 +1173,7 @@ function doDeleteByCodes(){
     return true;
   });
   if(deleted===0) return alert('אף קוד לא תואם. שום דבר לא נמחק.');
+  saved.forEach(({c})=>cloudRemoveSafe(c.id));
   store(PUB_KEY,remaining);
   publicChallenges=remaining;
   document.getElementById('deleteModal').classList.add('hidden');
@@ -1202,6 +1252,7 @@ function doAdminDeletePublic(id){
   del(pubScores(id));
   publicChallenges=pubList.filter(c=>c.id!==id);
   store(PUB_KEY,publicChallenges);
+  cloudRemoveSafe(id);
   if(challenge&&challenge.id===id){challenge=null;scores=[];}
   document.getElementById('deleteModal').classList.add('hidden');
   renderHome();
@@ -1425,6 +1476,7 @@ window.showScreen=function(name){
 // Init
 buildQForm();
 renderHome();
+setTimeout(()=>syncFromCloud(true),300);
 </script>
 </body>
 </html>
