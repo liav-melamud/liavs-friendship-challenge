@@ -282,7 +282,7 @@ function getAllPrivateChallenges(){
   return privs;
 }
 
-const QUESTION_COUNT = 5;
+const MAX_QUESTIONS = 20;
 function escapeHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function genCode(){const CHARSET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>CHARSET[Math.floor(Math.random()*CHARSET.length)]).join('')}
 
@@ -528,6 +528,7 @@ function goCreate(){
   document.getElementById('creatorNameInp').value='';
   document.getElementById('titleInp').value='';
   document.getElementById('deleteCodeInp').value='';
+  _qCount=1;_qAnswers=[null];_qTexts=[];
   buildQForm();
   showScreen('create');
 }
@@ -538,10 +539,15 @@ function setChallengeType(t){
   document.getElementById('typePrivBtn').className=t==='private'?'type-btn sel-priv':'type-btn';
 }
 
-function buildQForm(){
+function buildQForm(count){
+  _qCount=count||1;
+  _qAnswers=Array(_qCount).fill(null);
+  _renderQForm();
+}
+function _renderQForm(){
   const container=document.getElementById('questions-form');
   container.innerHTML='';
-  for(let i=0;i<QUESTION_COUNT;i++){
+  for(let i=0;i<_qCount;i++){
     const div=document.createElement('div');
     div.className='q-card';
     div.innerHTML=`
@@ -553,11 +559,51 @@ function buildQForm(){
       </div>`;
     container.appendChild(div);
   }
+  const ctrl=document.createElement('div');
+  ctrl.style.cssText='display:flex;gap:10px;margin-top:10px';
+  if(_qCount<MAX_QUESTIONS){
+    ctrl.innerHTML+=`<button class="btn btn-secondary" style="flex:1;font-size:.9rem;padding:11px 10px" onclick="addQuestion()">➕ הוסף שאלה</button>`;
+  }
+  if(_qCount>1){
+    ctrl.innerHTML+=`<button class="btn" style="flex:1;font-size:.9rem;padding:11px 10px;background:rgba(255,68,102,.15);color:#ff4466;border:1.5px solid rgba(255,68,102,.3)" onclick="removeQuestion()">➖ מחק שאלה אחרונה</button>`;
+  }
+  container.appendChild(ctrl);
+  for(let i=0;i<_qCount;i++){
+    const inp=document.getElementById(`q${i}`);
+    if(_qTexts[i]!==undefined) inp.value=_qTexts[i];
+    if(_qAnswers[i]!==null){
+      document.getElementById(`q${i}_t`).className='tbtn tbtn-t'+(_qAnswers[i]===true?' on':'');
+      document.getElementById(`q${i}_f`).className='tbtn tbtn-f'+(_qAnswers[i]===false?' on':'');
+    }
+  }
+}
+function _saveQTexts(){
+  for(let i=0;i<_qCount;i++){
+    const inp=document.getElementById(`q${i}`);
+    if(inp) _qTexts[i]=inp.value;
+  }
+}
+function addQuestion(){
+  _saveQTexts();
+  if(_qCount>=MAX_QUESTIONS) return;
+  _qCount++;
+  _qAnswers.push(null);
+  _renderQForm();
+  const cards=document.querySelectorAll('#questions-form .q-card');
+  if(cards.length) cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'center'});
+}
+function removeQuestion(){
+  if(_qCount<=1) return;
+  _saveQTexts();
+  _qCount--;
+  _qAnswers.pop();
+  _qTexts.splice(_qCount,1);
+  _renderQForm();
 }
 
-const qAnswers = Array(QUESTION_COUNT).fill(null);
+let _qCount=1,_qAnswers=[null],_qTexts=[];
 function setQAnswer(i,v){
-  qAnswers[i]=v;
+  _qAnswers[i]=v;
   document.getElementById(`q${i}_t`).className='tbtn tbtn-t'+(v===true?' on':'');
   document.getElementById(`q${i}_f`).className='tbtn tbtn-f'+(v===false?' on':'');
 }
@@ -570,11 +616,11 @@ function handleCreateSubmit(){
   if(!title) return alert('כתוב כותרת לאתגר');
   if(!delCode) return alert('כתוב קוד מחיקה');
   const questions=[];
-  for(let i=0;i<QUESTION_COUNT;i++){
-    const t=document.getElementById(`q${i}`).value.trim();
+  for(let i=0;i<_qCount;i++){
+    const t=document.getElementById(`q${i}`)?.value.trim()||'';
     if(!t) return alert(`שאלה ${i+1} ריקה`);
-    if(qAnswers[i]===null) return alert(`סמן תשובה לשאלה ${i+1}`);
-    questions.push({text:t,answer:qAnswers[i]});
+    if(_qAnswers[i]===null) return alert(`סמן תשובה לשאלה ${i+1}`);
+    questions.push({text:t,answer:_qAnswers[i]});
   }
   const code=challengeType==='private'?genCode():null;
   const id=Date.now().toString();
@@ -672,14 +718,14 @@ function renderPlayScreen(){
   }
   // progress
   let dots='';
-  for(let i=0;i<QUESTION_COUNT;i++) dots+=`<div class="pdot${i<=currentQ?' done':''}"></div>`;
+  for(let i=0;i<challenge.questions.length;i++) dots+=`<div class="pdot${i<=currentQ?' done':''}"></div>`;
   document.getElementById('progress-dots').innerHTML=dots;
   // answers
   document.getElementById('ansTrue').className='ans-btn ans-t';
   document.getElementById('ansFalse').className='ans-btn ans-f';
   selectedAnswer=null;
   document.getElementById('nextBtn').style.opacity='.5';
-  document.getElementById('nextBtn').textContent=currentQ<QUESTION_COUNT-1?'הבא ←':'סיים! 🎯';
+  document.getElementById('nextBtn').textContent=currentQ<challenge.questions.length-1?'הבא ←':'סיים! 🎯';
 }
 
 function selectAnswer(v){
@@ -694,7 +740,7 @@ function nextQuestion(){
   const isOk=selectedAnswer===challenge.questions[currentQ].answer;
   if(typeof showAnswerFeedback==='function') showAnswerFeedback(isOk);
   playerAnswers.push(selectedAnswer);
-  if(currentQ<QUESTION_COUNT-1){currentQ++;renderPlayScreen();}
+  if(currentQ<challenge.questions.length-1){currentQ++;renderPlayScreen();}
   else{
     const score=playerAnswers.filter((a,i)=>a===challenge.questions[i].answer).length;
     resetPlayAdminUI();
