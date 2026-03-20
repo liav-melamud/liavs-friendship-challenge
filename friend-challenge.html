@@ -378,6 +378,7 @@ function renderHomeAdminPanel(){
         ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${c.id}');renderHomeAdminPanel();renderHome()">שחרר</button>`
         :`<input type="number" id="bNum_${c.id}" min="1" max="60" value="1" style="width:46px;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px;font-size:.75rem;text-align:center">
         <select id="bUnit_${c.id}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 5px;font-size:.75rem;cursor:pointer" onchange="document.getElementById('bNum_${c.id}').style.display=this.value==='0'?'none':'inline-block'">
+          <option value="0.01667">שניות</option>
           <option value="1">דקות</option>
           <option value="60">שעות</option>
           <option value="1440">ימים</option>
@@ -401,6 +402,7 @@ function renderHomeAdminPanel(){
         ?`<button class="btn" style="width:auto;padding:5px 12px;margin:0;font-size:.75rem;background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3)" onclick="unblockChallenge('${bid}');renderHomeAdminPanel();renderHome()">שחרר</button>`
         :`<input type="number" id="bNum_${bid}" min="1" max="60" value="1" style="width:46px;background:#1a1a2e;color:#e2e8f0;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px;font-size:.75rem;text-align:center">
         <select id="bUnit_${bid}" style="background:#1a1a2e;color:#a8b8d8;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 5px;font-size:.75rem;cursor:pointer" onchange="document.getElementById('bNum_${bid}').style.display=this.value==='0'?'none':'inline-block'">
+          <option value="0.01667">שניות</option>
           <option value="1">דקות</option>
           <option value="60">שעות</option>
           <option value="1440">ימים</option>
