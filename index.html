@@ -309,6 +309,12 @@ async function uploadLocalToCloud(){
   for(const c of local)d.challenges[c.id]=c;
   await _blobPut(d);
 }
+async function uploadSingleChallenge(id){
+  const ch=(load(PUB_KEY)||[]).find(c=>c.id===id);
+  if(!ch) return alert('אתגר לא נמצא');
+  await cloudPut(id,ch);
+  alert('✅ עלה לענן!');
+}
 async function syncFromCloud(andRender){
   const remote=await cloudFetchAll();
   if(remote===null)return;
@@ -636,7 +642,7 @@ function renderHome(){
           <div style="color:#a8b8d8;font-size:.78rem;margin-top:2px">של ${escapeHtml(ch.creatorName)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="event.stopPropagation();cloudPut('${ch.id}',${JSON.stringify(JSON.stringify(ch))}).then(()=>alert('✅ עלה לענן!'))" style="background:none;border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#00e5ff;font-size:.68rem;padding:4px 8px;cursor:pointer">עלה לענן</button>
+          <button onclick="event.stopPropagation();uploadSingleChallenge('${ch.id}')" style="background:none;border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#00e5ff;font-size:.68rem;padding:4px 8px;cursor:pointer">עלה לענן</button>
           <div style="color:${clr};font-size:1.4rem;opacity:.8" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})' style="cursor:pointer">▶</div>
         </div>
       </div>
