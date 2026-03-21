@@ -636,7 +636,7 @@ function renderHome(){
           <div style="color:#a8b8d8;font-size:.78rem;margin-top:2px">של ${escapeHtml(ch.creatorName)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="event.stopPropagation();cloudPut('${ch.id}',${JSON.stringify(JSON.stringify(ch))}).then(()=>alert('✅ האתגר “${escapeHtml(ch.title).replace(/'/g,"&#39;")}” עלה לענן!'))" title="העלה לענן" style="background:none;border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#00e5ff;font-size:.75rem;padding:4px 8px;cursor:pointer">☁️</button>
+          <button onclick="event.stopPropagation();cloudPut('${ch.id}',${JSON.stringify(JSON.stringify(ch))}).then(()=>alert('✅ עלה לענן!'))" style="background:none;border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#00e5ff;font-size:.68rem;padding:4px 8px;cursor:pointer">עלה לענן</button>
           <div style="color:${clr};font-size:1.4rem;opacity:.8" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})' style="cursor:pointer">▶</div>
         </div>
       </div>
