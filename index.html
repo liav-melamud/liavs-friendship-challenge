@@ -1549,7 +1549,11 @@ window.showScreen=function(name){
 // Init
 buildQForm();
 renderHome();
-setTimeout(()=>syncFromCloud(true),300);
+// On load: upload any local challenges to cloud, then sync down
+setTimeout(async()=>{
+  if((load(PUB_KEY)||[]).length>0) await uploadLocalToCloud();
+  await syncFromCloud(true);
+},300);
 </script>
 </body>
 </html>
