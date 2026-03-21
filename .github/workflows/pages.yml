@@ -24,6 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Inject sync token
+        run: sed -i 's/__SYNC_TOKEN__/${{ secrets.SYNC_TOKEN }}/g' index.html friend-challenge.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

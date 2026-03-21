@@ -284,30 +284,50 @@ const BLOCK_KEY = 'fc_blocked';
 function store(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
 function load(key){try{const v=localStorage.getItem(key);return v?JSON.parse(v):null}catch(e){return null}}
 function del(key){try{localStorage.removeItem(key)}catch(e){}}
-// ─── Cloud Sync (Shared Storage - automatic, zero-config) ───────────────────
-const BLOB_URL='https://jsonblob.com/api/jsonBlob/019d0fb4-b6ed-7407-8001-eb273389b902';
-async function _blobGet(){try{const r=await fetch(BLOB_URL);return r.ok?await r.json():null;}catch(e){return null;}}
-async function _blobPut(data){try{await fetch(BLOB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}catch(e){}}
-async function cloudFetchAll(){const d=await _blobGet();if(d===null)return null;return Object.values(d.challenges||{}).filter(Boolean);}
+// ─── Cloud Sync (GitHub repo storage - CORS enabled) ──────────────────────
+const _GH_OWNER='liav-melamud',_GH_REPO='liavs-friendship-challenge';
+const _RAW_URL='https://raw.githubusercontent.com/'+_GH_OWNER+'/'+_GH_REPO+'/main/data.json';
+const _API_URL='https://api.github.com/repos/'+_GH_OWNER+'/'+_GH_REPO+'/contents/data.json';
+const _SYNC_TOKEN='__SYNC_TOKEN__';
+let _ghSha=null;
+async function _ghGet(){
+  try{const r=await fetch(_RAW_URL+'?t='+Date.now());return r.ok?await r.json():null;}catch(e){return null;}
+}
+async function _fetchSha(){
+  try{
+    const r=await fetch(_API_URL,{headers:{Authorization:'Bearer '+_SYNC_TOKEN}});
+    if(r.ok){const d=await r.json();_ghSha=d.sha;}
+  }catch(e){}
+}
+async function _ghPut(data){
+  try{
+    if(!_ghSha)await _fetchSha();
+    const content=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    const body=JSON.stringify({message:'sync',content,sha:_ghSha});
+    const r=await fetch(_API_URL,{method:'PUT',headers:{Authorization:'Bearer '+_SYNC_TOKEN,'Content-Type':'application/json'},body});
+    if(r.ok){const d=await r.json();_ghSha=(d.content&&d.content.sha)||_ghSha;}
+  }catch(e){}
+}
+async function cloudFetchAll(){const d=await _ghGet();if(d===null)return null;return Object.values(d.challenges||{}).filter(Boolean);}
 async function cloudPut(id,data){
-  const d=await _blobGet();if(d===null)return;
+  const d=await _ghGet();if(d===null)return;
   d.challenges=d.challenges||{};d.challenges[id]=data;
-  await _blobPut(d);
+  await _ghPut(d);
 }
 async function cloudRemove(id){
-  const d=await _blobGet();if(d===null)return;
+  const d=await _ghGet();if(d===null)return;
   if(d.challenges)delete d.challenges[id];
-  await _blobPut(d);
+  await _ghPut(d);
 }
 function cloudRemoveSafe(id){
   setTimeout(()=>{const stillLocal=(load(PUB_KEY)||[]).find(c=>c.id===id);if(!stillLocal)cloudRemove(id);},25000);
 }
 async function uploadLocalToCloud(){
   const local=load(PUB_KEY)||[];
-  const d=(await _blobGet())||{challenges:{}};
+  const d=(await _ghGet())||{challenges:{}};
   d.challenges=d.challenges||{};
   for(const c of local)d.challenges[c.id]=c;
-  await _blobPut(d);
+  await _ghPut(d);
 }
 async function uploadSingleChallenge(id){
   const ch=(load(PUB_KEY)||[]).find(c=>c.id===id);
