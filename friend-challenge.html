@@ -94,6 +94,10 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
       <button class="btn btn-primary" style="flex:1;background:linear-gradient(135deg,#ff416c,#ff9a44,#ffb347);box-shadow:0 4px 22px rgba(255,100,80,.5);font-size:1rem;margin:0" onclick="goCreate()">✏️ העלאת אתגר</button>
       <button class="btn" style="flex:1;background:linear-gradient(135deg,#00bcd4,#3ef7a0);color:#081a2e;font-size:1rem;font-weight:800;margin:0;box-shadow:0 4px 22px rgba(0,229,255,.4)" onclick="goReceive()">📥 קבלת אתגר</button>
     </div>
+    <div id="bannerUploadOld" class="hidden" style="background:rgba(0,229,255,.08);border:1.5px dashed rgba(0,229,255,.35);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="color:#a8c8e8;font-size:.8rem;line-height:1.4">☁️ יש לך אתגרים ישנים שטרם עלו לענן</div>
+      <button class="btn" style="width:auto;padding:7px 14px;margin:0;font-size:.8rem;background:rgba(0,229,255,.15);color:#00e5ff;border:1px solid rgba(0,229,255,.4);white-space:nowrap" onclick="uploadLocalToCloud().then(()=>{alert('✅ כל האתגרים הישנים עלו לענן!');document.getElementById('bannerUploadOld').classList.add('hidden');})"> העלה</button>
+    </div>
     <div class="divider"></div>
     <div class="section-hdr" style="background:linear-gradient(90deg,#3ef7a0,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">🌍 אתגרים ציבוריים</div>
     <div id="public-list"></div>
@@ -594,6 +598,10 @@ function renderHome(){
   const btnReset = document.getElementById('btnLocalReset');
   if(publicChallenges.length>0 || getAllPrivateChallenges().length>0) btnReset.classList.remove('hidden');
   else btnReset.classList.add('hidden');
+  // show upload banner if there are local challenges not yet known to be synced
+  const banner=document.getElementById('bannerUploadOld');
+  if(publicChallenges.length>0) banner.style.display='flex';
+  else banner.classList.add('hidden');
 
   const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
   const bgs=['rgba(46,247,160,.08)','rgba(0,229,255,.08)','rgba(255,179,71,.08)','rgba(255,106,173,.08)','rgba(204,153,255,.08)'];
@@ -619,13 +627,16 @@ function renderHome(){
         </div>
       </div>`;
     }
-    return `<div class="pub-card" style="border:1.5px solid ${br};background:${bg}" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})'>
-      <div style="display:flex;justify-content:space-between;align-items:center">
+    return `<div class="pub-card" style="border:1.5px solid ${br};background:${bg}">
+      <div style="display:flex;justify-content:space-between;align-items:center" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})' style="cursor:pointer">
         <div>
           <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:1.05rem">${escapeHtml(ch.title)}</div>
           <div style="color:#a8b8d8;font-size:.78rem;margin-top:2px">של ${escapeHtml(ch.creatorName)}</div>
         </div>
-        <div style="color:${clr};font-size:1.4rem;opacity:.8">▶</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="event.stopPropagation();cloudPut('${ch.id}',${JSON.stringify(JSON.stringify(ch))}).then(()=>alert('✅ האתגר “${escapeHtml(ch.title).replace(/'/g,"&#39;")}” עלה לענן!'))" title="העלה לענן" style="background:none;border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#00e5ff;font-size:.75rem;padding:4px 8px;cursor:pointer">☁️</button>
+          <div style="color:${clr};font-size:1.4rem;opacity:.8" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})' style="cursor:pointer">▶</div>
+        </div>
       </div>
     </div>`;
   }).join('');
