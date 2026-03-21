@@ -90,7 +90,10 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
       <span style="color:#cc99ff;font-weight:800;font-size:1rem">או </span>
       <span style="color:#3ef7a0;font-weight:800;font-size:1rem">פרטי</span>
     </div>
-    <button class="btn btn-primary" style="background:linear-gradient(135deg,#ff416c,#ff9a44,#ffb347);box-shadow:0 4px 22px rgba(255,100,80,.5);font-size:1.1rem" onclick="goCreate()">✏️ צור אתגר חדש</button>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <button class="btn btn-primary" style="flex:1;background:linear-gradient(135deg,#ff416c,#ff9a44,#ffb347);box-shadow:0 4px 22px rgba(255,100,80,.5);font-size:1rem;margin:0" onclick="goCreate()">✏️ העלאת אתגר</button>
+      <button class="btn" style="flex:1;background:linear-gradient(135deg,#00bcd4,#3ef7a0);color:#081a2e;font-size:1rem;font-weight:800;margin:0;box-shadow:0 4px 22px rgba(0,229,255,.4)" onclick="goReceive()">📥 קבלת אתגר</button>
+    </div>
     <div class="divider"></div>
     <div class="section-hdr" style="background:linear-gradient(90deg,#3ef7a0,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">🌍 אתגרים ציבוריים</div>
     <div id="public-list"></div>
@@ -121,6 +124,16 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
       </div>
     </div>
 
+  </div>
+
+  <!-- RECEIVE -->
+  <div id="screen-receive" class="card hidden">
+    <button class="back-btn" onclick="showScreen('home')">← חזרה</button>
+    <div class="title" style="font-size:1.8rem;margin-bottom:6px">📥 קבלת אתגרים</div>
+    <div id="receive-status" style="text-align:center;padding:10px 0;font-size:.95rem;margin-bottom:16px"></div>
+    <div id="receive-list"></div>
+    <button class="btn btn-secondary" style="margin-top:12px;font-size:.9rem" onclick="goReceive()">🔄 סנכרן שוב</button>
+    <button class="btn btn-secondary" style="margin-top:4px;font-size:.9rem" onclick="showScreen('home')">🏠 חזרה לדף הבית</button>
   </div>
 
   <!-- CREATE -->
@@ -525,11 +538,55 @@ function doBlock(id,isPriv){
 }
 
 // ─── Screen routing ────────────────────────────────────────────────────────
-const screens = ['home','create','created','enter-name','play','result','leaderboard'];
+const screens = ['home','create','created','receive','enter-name','play','result','leaderboard'];
 function showScreen(name){
   screens.forEach(s=>document.getElementById('screen-'+s).classList.add('hidden'));
   document.getElementById('screen-'+name).classList.remove('hidden');
   if(name==='home') renderHome();
+}
+
+// ─── Receive ───────────────────────────────────────────────────────────────
+function _renderReceiveList(challenges){
+  const statusEl=document.getElementById('receive-status');
+  const listEl=document.getElementById('receive-list');
+  if(!challenges||challenges.length===0){
+    statusEl.innerHTML='<span style="color:#ffb347">📭 אין אתגרים כרגע — חכה שחברים יעלו!</span>';
+    listEl.innerHTML='';
+    return;
+  }
+  statusEl.innerHTML=`<span style="color:#2ecc71">✅ קיבלת ${challenges.length} אתגרים מהענן!</span>`;
+  const cols=['#3ef7a0','#00e5ff','#ffb347','#ff6aad','#cc99ff'];
+  const bgs=['rgba(46,247,160,.08)','rgba(0,229,255,.08)','rgba(255,179,71,.08)','rgba(255,106,173,.08)','rgba(204,153,255,.08)'];
+  const brs=['rgba(46,247,160,.28)','rgba(0,229,255,.28)','rgba(255,179,71,.28)','rgba(255,106,173,.28)','rgba(204,153,255,.28)'];
+  listEl.innerHTML=challenges.map((ch,i)=>{
+    const clr=cols[i%cols.length],bg=bgs[i%bgs.length],br=brs[i%brs.length];
+    if(isBlocked(ch.id)) return `<div class="pub-card" style="border:1.5px solid rgba(255,68,102,.3);background:rgba(255,68,102,.05);opacity:.6">
+      <div style="font-family:'Fredoka One',cursive;color:#ff6aad">${escapeHtml(ch.title)}</div>
+      <div style="color:#ff6aad;font-size:.75rem;margin-top:2px">🔒 חסום</div></div>`;
+    return `<div class="pub-card" style="border:1.5px solid ${br};background:${bg}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:1.05rem">${escapeHtml(ch.title)}</div>
+          <div style="color:#a8b8d8;font-size:.78rem;margin-top:2px">של ${escapeHtml(ch.creatorName)}</div>
+        </div>
+        <button class="btn btn-primary" style="width:auto;padding:9px 18px;margin:0;font-size:.88rem" onclick='playPublic(${JSON.stringify(JSON.stringify(ch))})'>▶ שחק</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function goReceive(){
+  showScreen('receive');
+  const statusEl=document.getElementById('receive-status');
+  statusEl.innerHTML='<span style="color:#00e5ff">🔄 מסנכרן עם כל המכשירים...</span>';
+  document.getElementById('receive-list').innerHTML='';
+  const remote=await cloudFetchAll();
+  if(remote===null){
+    statusEl.innerHTML='<span style="color:#ff4466">❌ שגיאת חיבור. נסה שוב.</span>';
+    return;
+  }
+  publicChallenges=remote;
+  store(PUB_KEY,publicChallenges);
+  _renderReceiveList(remote);
 }
 
 // ─── Home ──────────────────────────────────────────────────────────────────
