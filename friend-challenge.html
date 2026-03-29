@@ -869,7 +869,7 @@ function startPlaying(){
 }
 
 function renderPlayScreen(){
-  document.getElementById('play-qnum').textContent=`שאלה ${currentQ+1} מתוך 5`;
+  document.getElementById('play-qnum').textContent=`שאלה ${currentQ+1} מתוך ${challenge.questions.length}`;
   document.getElementById('play-player').textContent=playerName;
   document.getElementById('play-creator').textContent=`האתגר של ${challenge.creatorName}`;
   document.getElementById('play-question').textContent=challenge.questions[currentQ].text;
@@ -925,8 +925,8 @@ function saveScore(name,score){
 }
 
 function renderResult(score){
-  document.getElementById('result-score').textContent=`${score}/5`;
-  document.getElementById('result-label').textContent=score===5?'🏆 מושלם! כל הכבוד!':score>=3?'👏 כל הכבוד!':'😅 נסה שוב בפעם הבאה!';
+  document.getElementById('result-score').textContent=`${score}/${challenge.questions.length}`;
+  document.getElementById('result-label').textContent=score===challenge.questions.length?'🏆 מושלם! כל הכבוד!':score>=Math.ceil(challenge.questions.length/2)?'👏 כל הכבוד!':'😅 נסה שוב בפעם הבאה!';
   let rows='';
   challenge.questions.forEach((q,i)=>{
     const ok=playerAnswers[i]===q.answer;
@@ -952,7 +952,7 @@ function showLeaderboard(){
     rows+=`<div class="lb-row">
       <div class="rank ${rankCls[i]||''}">#${i+1}</div>
       <div style="flex:1;color:#e2e8f0;font-weight:700;font-size:.95rem">${escapeHtml(s.name)}</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;background:linear-gradient(135deg,#ff6aad,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.score}/5</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;background:linear-gradient(135deg,#ff6aad,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.score}/${challenge.questions.length}</div>
     </div>`;
   });
   document.getElementById('lb-rows').innerHTML=rows;
