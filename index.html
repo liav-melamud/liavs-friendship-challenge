@@ -367,6 +367,16 @@ async function doUploadChallenge(id){
   renderHome();
   setHomeTab('mine');
 }
+async function doUploadPrivateChallenge(code){
+  const btn=document.getElementById('upload_priv_btn_'+code);
+  if(btn){btn.textContent='⏳...';btn.disabled=true;}
+  const ch=load(privKey(code));
+  if(!ch){alert('אתגר לא נמצא');if(btn){btn.textContent='☁️ העלה';btn.disabled=false;}return;}
+  await cloudPutPrivate(code,ch);
+  markCloudSynced(ch.id);
+  renderHome();
+  setHomeTab('mine');
+}
 
 function store(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
 function load(key){try{const v=localStorage.getItem(key);return v?JSON.parse(v):null}catch(e){return null}}
@@ -408,6 +418,20 @@ async function cloudRemove(id){
 }
 function cloudRemoveSafe(id){
   setTimeout(()=>{const stillLocal=(load(PUB_KEY)||[]).find(c=>c.id===id);if(!stillLocal)cloudRemove(id);},25000);
+}
+async function cloudPutPrivate(code,data){
+  const d=await _ghGet();if(d===null)return;
+  d.private_challenges=d.private_challenges||{};d.private_challenges[code]=data;
+  await _ghPut(d);
+}
+async function cloudFetchPrivate(code){
+  const d=await _ghGet();if(d===null)return null;
+  return (d.private_challenges||{})[code]||null;
+}
+async function cloudRemovePrivate(code){
+  const d=await _ghGet();if(d===null)return;
+  if(d.private_challenges)delete d.private_challenges[code];
+  await _ghPut(d);
 }
 async function uploadLocalToCloud(){
   const local=load(PUB_KEY)||[];
@@ -612,6 +636,7 @@ function renderMyLocalList(){
           <div style="font-family:'Fredoka One',cursive;color:${clr};font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ch.title)}</div>
           <div style="color:#a8b8d8;font-size:.75rem;margin-top:3px">🔐 פרטי · קוד: <span style="letter-spacing:3px;color:#cc99ff;font-family:'Fredoka One',cursive">${escapeHtml(ch.code)}</span>${expHtml}</div>
         </div>
+        <button id="upload_priv_btn_${ch.code}" class="btn" style="width:auto;padding:8px 13px;margin:0;font-size:.82rem;background:linear-gradient(135deg,#00bcd4,#3ef7a0);color:#081a2e;font-weight:800;flex-shrink:0" onclick="doUploadPrivateChallenge('${ch.code}')">☁️ העלה</button>
         <button class="btn btn-primary" style="width:auto;padding:8px 16px;margin:0;font-size:.85rem;flex-shrink:0" onclick='playMyChallenge(${JSON.stringify(JSON.stringify(ch))})'>▶ שחק</button>
       </div>`;
     }
@@ -1271,10 +1296,17 @@ function shareWhatsApp(){
 }
 
 // ─── Code entry ──────────────────────────────────────────────────────────────
-function playWithCode(){
+async function playWithCode(){
   const code=document.getElementById('codeInput').value.trim().toUpperCase();
   if(code.length<4) return alert('הכנס קוד תקין');
-  const data=load(privKey(code));
+  let data=load(privKey(code));
+  if(!data){
+    const playBtn=document.querySelector('.lock-row .btn-primary');
+    if(playBtn){playBtn.textContent='🔄...';playBtn.disabled=true;}
+    data=await cloudFetchPrivate(code);
+    if(playBtn){playBtn.textContent='➜';playBtn.disabled=false;}
+    if(data) store(privKey(code),data);
+  }
   if(!data) return alert('קוד לא נמצא! בדוק שהקוד נכון.');
   if(isBlocked('priv_'+code)) return alert('האתגר הזה חסום כרגע.');
   challenge=data;
