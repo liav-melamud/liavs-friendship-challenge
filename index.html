@@ -186,14 +186,25 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
     <input class="inp" id="titleInp" placeholder='למשל: "כמה אתה מכיר אותי?"' style="margin-bottom:16px">
     <label class="label">🔑 קוד מחיקה (שמור אותו!)</label>
     <input class="inp" id="deleteCodeInp" placeholder='קוד שתזכור, למשל "pizza123"' style="margin-bottom:16px;border-color:rgba(255,179,71,.4)">
-    <label class="label">⏰ מחיקה אוטומטית <span style="font-weight:400;color:#7a8aaa">(לא חובה)</span></label>
-    <select class="inp" id="expirySelect" style="margin-bottom:20px;border-color:rgba(100,160,255,.4);background:rgba(10,20,40,.8);color:#a8b8d8">
-      <option value="">ללא מחיקה אוטומטית</option>
-      <option value="1">מחר</option>
-      <option value="3">בעוד 3 ימים</option>
-      <option value="7">בעוד שבוע</option>
-      <option value="30">בעוד חודש</option>
-    </select>
+    <label class="label">⏰ מחיקה אוטומטית <span style="font-weight:400;color:#7a8aaa">(לא חובה — 0 בכולם = ללא מחיקה)</span></label>
+    <div style="display:flex;gap:8px;margin-bottom:20px;direction:ltr">
+      <div style="flex:1;text-align:center">
+        <input class="inp" id="expDays" type="number" min="0" value="0" placeholder="0" style="text-align:center;padding:10px 6px;border-color:rgba(100,160,255,.4)">
+        <div style="color:#a8b8d8;font-size:.72rem;margin-top:4px">ימים</div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <input class="inp" id="expHours" type="number" min="0" max="23" value="0" placeholder="0" style="text-align:center;padding:10px 6px;border-color:rgba(100,160,255,.4)">
+        <div style="color:#a8b8d8;font-size:.72rem;margin-top:4px">שעות</div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <input class="inp" id="expMinutes" type="number" min="0" max="59" value="0" placeholder="0" style="text-align:center;padding:10px 6px;border-color:rgba(100,160,255,.4)">
+        <div style="color:#a8b8d8;font-size:.72rem;margin-top:4px">דקות</div>
+      </div>
+      <div style="flex:1;text-align:center">
+        <input class="inp" id="expSeconds" type="number" min="0" max="59" value="0" placeholder="0" style="text-align:center;padding:10px 6px;border-color:rgba(100,160,255,.4)">
+        <div style="color:#a8b8d8;font-size:.72rem;margin-top:4px">שניות</div>
+      </div>
+    </div>
     <div id="questions-form"></div>
     <button class="btn btn-primary" onclick="handleCreateSubmit()">🚀 פרסם!</button>
   </div>
@@ -678,10 +689,19 @@ function expiryLabel(ch){
   if(!ch.expiresAt) return null;
   const rem=ch.expiresAt-Date.now();
   if(rem<=0) return null;
-  if(rem<3600000) return {text:`נמחק בעוד פחות משעה`,cls:'expiry-soon'};
-  if(rem<86400000){const h=Math.ceil(rem/3600000);return {text:`נמחק בעוד ${h} שע'`,cls:'expiry-soon'};}
-  const d=Math.ceil(rem/86400000);
-  return {text:`נמחק בעוד ${d} ימים`,cls:d<=3?'expiry-warn':'expiry-ok'};
+  const totalSec=Math.ceil(rem/1000);
+  const d=Math.floor(totalSec/86400);
+  const h=Math.floor((totalSec%86400)/3600);
+  const m=Math.floor((totalSec%3600)/60);
+  const s=totalSec%60;
+  let text='';
+  if(d>0) text+=`${d}י `;
+  if(d>0||h>0) text+=`${h}ש `;
+  if(d>0||h>0||m>0) text+=`${m}ד `;
+  text+=`${s}ש"`;
+  text='⏱ ' + text.trim();
+  const cls=rem<60000?'expiry-soon':rem<3600000?'expiry-soon':rem<86400000?'expiry-warn':'expiry-ok';
+  return {text,cls};
 }
 function checkExpiredChallenges(){
   const now=Date.now();
@@ -960,7 +980,10 @@ function goCreate(){
   document.getElementById('creatorNameInp').value='';
   document.getElementById('titleInp').value='';
   document.getElementById('deleteCodeInp').value='';
-  document.getElementById('expirySelect').value='';
+  document.getElementById('expDays').value='0';
+  document.getElementById('expHours').value='0';
+  document.getElementById('expMinutes').value='0';
+  document.getElementById('expSeconds').value='0';
   _qCount=1;_qAnswers=[null];_qTexts=[];
   buildQForm();
   showScreen('create');
@@ -1060,8 +1083,12 @@ function handleCreateSubmit(){
   }
   const code=challengeType==='private'?genCode():null;
   const id=Date.now().toString();
-  const expiryDays=parseInt(document.getElementById('expirySelect')?.value||'0')||0;
-  const expiresAt=expiryDays>0?Date.now()+expiryDays*86400000:null;
+  const expiryDays=parseInt(document.getElementById('expDays')?.value||'0')||0;
+  const expiryHours=parseInt(document.getElementById('expHours')?.value||'0')||0;
+  const expiryMinutes=parseInt(document.getElementById('expMinutes')?.value||'0')||0;
+  const expirySeconds=parseInt(document.getElementById('expSeconds')?.value||'0')||0;
+  const totalMs=(expiryDays*86400+expiryHours*3600+expiryMinutes*60+expirySeconds)*1000;
+  const expiresAt=totalMs>0?Date.now()+totalMs:null;
   const data={title,creatorName:creator,type:challengeType,code,id,deleteCode:delCode,questions,...(expiresAt?{expiresAt}:{})};
   addMyCreated(data);
   if(challengeType==='public'){
@@ -1858,6 +1885,28 @@ renderHome();
 setTimeout(async()=>{
   await syncFromCloud(true);
 },300);
+// Live expiry ticker — runs every second, removes expired challenges in real-time
+setInterval(()=>{
+  const now=Date.now();
+  const pub=load(PUB_KEY)||[];
+  const expiredPub=pub.filter(c=>c.expiresAt&&c.expiresAt<=now);
+  let changed=false;
+  if(expiredPub.length>0){
+    expiredPub.forEach(c=>{storeRecentlyDeleted(c);cloudRemove(c.id);});
+    store(PUB_KEY,pub.filter(c=>!c.expiresAt||c.expiresAt>now));
+    publicChallenges=load(PUB_KEY)||[];
+    changed=true;
+  }
+  const priv=getAllPrivateChallenges().filter(c=>c.expiresAt&&c.expiresAt<=now);
+  if(priv.length>0){
+    priv.forEach(c=>{storeRecentlyDeleted(c);del(privKey(c.code));del(privScores(c.code));});
+    changed=true;
+  }
+  // Always re-render home to update countdown labels; if on a different screen skip heavy render
+  const currentScreen=document.querySelector('.card:not(.hidden)');
+  const isHome=currentScreen&&(currentScreen.id==='screen-home');
+  if(isHome||changed) renderHome();
+},1000);
 </script>
 </body>
 </html>
