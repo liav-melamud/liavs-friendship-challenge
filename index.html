@@ -402,14 +402,15 @@ async function _ghPut(data){
     const content=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
     const body=JSON.stringify({message:'sync',content,sha:_ghSha});
     const r=await fetch(_API_URL,{method:'PUT',headers:{Authorization:'Bearer '+_SYNC_TOKEN,'Content-Type':'application/json'},body});
-    if(r.ok){const d=await r.json();_ghSha=(d.content&&d.content.sha)||_ghSha;}
-  }catch(e){}
+    if(r.ok){const d=await r.json();_ghSha=(d.content&&d.content.sha)||_ghSha;return true;}
+    return false;
+  }catch(e){return false;}
 }
 async function cloudFetchAll(){const d=await _ghGet();if(d===null)return null;return Object.values(d.challenges||{}).filter(Boolean);}
 async function cloudPut(id,data){
-  const d=await _ghGet();if(d===null)return;
+  const d=await _ghGet();if(d===null)return false;
   d.challenges=d.challenges||{};d.challenges[id]=data;
-  await _ghPut(d);
+  return await _ghPut(d);
 }
 async function cloudRemove(id){
   const d=await _ghGet();if(d===null)return;
@@ -420,9 +421,9 @@ function cloudRemoveSafe(id){
   setTimeout(()=>{const stillLocal=(load(PUB_KEY)||[]).find(c=>c.id===id);if(!stillLocal)cloudRemove(id);},25000);
 }
 async function cloudPutPrivate(code,data){
-  const d=await _ghGet();if(d===null)return;
+  const d=await _ghGet();if(d===null)return false;
   d.private_challenges=d.private_challenges||{};d.private_challenges[code]=data;
-  await _ghPut(d);
+  return await _ghPut(d);
 }
 async function cloudFetchPrivate(code){
   const d=await _ghGet();if(d===null)return null;
@@ -1092,7 +1093,7 @@ function setQAnswer(i,v){
   document.getElementById(`q${i}_f`).className='tbtn tbtn-f'+(v===false?' on':'');
 }
 
-function handleCreateSubmit(){
+async function handleCreateSubmit(){
   const creator=document.getElementById('creatorNameInp').value.trim();
   const title=document.getElementById('titleInp').value.trim();
   const delCode=document.getElementById('deleteCodeInp').value.trim();
@@ -1119,9 +1120,12 @@ function handleCreateSubmit(){
   if(challengeType==='public'){
     publicChallenges.push(data);
     store(PUB_KEY,publicChallenges);
-    // User uploads to cloud explicitly via העלה לענן
+    const ok=await cloudPut(id,data);
+    if(ok) markCloudSynced(id);
   } else {
     store(privKey(code),data);
+    const ok=await cloudPutPrivate(code,data);
+    if(ok) markCloudSynced(id);
   }
   challenge=data; scores=[];
   // render created screen
