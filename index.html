@@ -127,7 +127,7 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
     <div class="divider"></div>
     <div class="section-hdr" style="background:linear-gradient(90deg,#cc99ff,#ff99ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">🔐 אתגר פרטי — הכנס קוד</div>
     <div class="lock-row">
-      <input class="inp" id="codeInput" placeholder="קוד אתגר (6 תווים)..." style="flex:1;letter-spacing:4px;text-transform:uppercase;font-family:'Fredoka One',cursive;font-size:1.1rem;border-color:rgba(160,110,245,.45);color:#cc99ff" oninput="this.value=this.value.toUpperCase().slice(0,6)" onkeydown="if(event.key==='Enter')playWithCode()">
+      <input class="inp" id="codeInput" placeholder="קוד אתגר..." style="flex:1;letter-spacing:4px;text-transform:uppercase;font-family:'Fredoka One',cursive;font-size:1.1rem;border-color:rgba(160,110,245,.45);color:#cc99ff" oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')" maxlength="20" onkeydown="if(event.key==='Enter')playWithCode()">
       <button class="btn btn-primary" style="width:auto;padding:12px 22px;margin-bottom:0;font-size:1.3rem;background:linear-gradient(135deg,#a06ef5,#ff6aad);box-shadow:0 4px 18px rgba(160,110,245,.5)" onclick="playWithCode()">➜</button>
     </div>
     <div class="divider"></div>
@@ -179,6 +179,10 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
         <div style="font-weight:800;color:#a06ef5;font-size:.9rem">פרטי</div>
         <div style="color:#a8b2d8;font-size:.75rem;margin-top:3px">רק עם קוד סודי</div>
       </button>
+    </div>
+    <div id="priv-code-row" class="hidden">
+      <label class="label">🔐 קוד סודי לאתגר</label>
+      <input class="inp" id="privCodeInp" placeholder='למשל: PIZZA או BFF2025' style="margin-bottom:16px;border-color:rgba(160,110,245,.4);text-transform:uppercase;letter-spacing:2px" oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')" maxlength="20">
     </div>
     <label class="label">השם שלך</label>
     <input class="inp" id="creatorNameInp" placeholder="מה שמך?" style="margin-bottom:16px">
@@ -1006,6 +1010,8 @@ function goCreate(){
   document.getElementById('creatorNameInp').value='';
   document.getElementById('titleInp').value='';
   document.getElementById('deleteCodeInp').value='';
+  document.getElementById('privCodeInp').value='';
+  document.getElementById('priv-code-row').classList.add('hidden');
   document.getElementById('expDays').value='0';
   document.getElementById('expHours').value='0';
   document.getElementById('expMinutes').value='0';
@@ -1019,6 +1025,7 @@ function setChallengeType(t){
   challengeType=t;
   document.getElementById('typePublicBtn').className=t==='public'?'type-btn sel-pub':'type-btn';
   document.getElementById('typePrivBtn').className=t==='private'?'type-btn sel-priv':'type-btn';
+  document.getElementById('priv-code-row').classList.toggle('hidden',t!=='private');
 }
 
 function buildQForm(count){
@@ -1107,7 +1114,14 @@ async function handleCreateSubmit(){
     if(_qAnswers[i]===null) return alert(`סמן תשובה לשאלה ${i+1}`);
     questions.push({text:t,answer:_qAnswers[i]});
   }
-  const code=challengeType==='private'?genCode():null;
+  let code=null;
+  if(challengeType==='private'){
+    code=document.getElementById('privCodeInp').value.trim().toUpperCase();
+    if(!code) return alert('כתוב קוד סודי לאתגר הפרטי');
+    if(load(privKey(code))) return alert('הקוד "'+code+'" כבר תפוס — בחר קוד אחר');
+    const cloudExisting=await cloudFetchPrivate(code);
+    if(cloudExisting) return alert('הקוד "'+code+'" כבר תפוס — בחר קוד אחר');
+  }
   const id=Date.now().toString();
   const expiryDays=parseInt(document.getElementById('expDays')?.value||'0')||0;
   const expiryHours=parseInt(document.getElementById('expHours')?.value||'0')||0;
