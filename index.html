@@ -182,7 +182,10 @@ input.inp:focus{border-color:#b06ef5;box-shadow:0 0 0 3px rgba(176,110,245,.18)}
     </div>
     <div id="priv-code-row" class="hidden">
       <label class="label">🔐 קוד סודי לאתגר</label>
-      <input class="inp" id="privCodeInp" placeholder='למשל: PIZZA או BFF2025' style="margin-bottom:16px;border-color:rgba(160,110,245,.4);text-transform:uppercase;letter-spacing:2px" oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')" maxlength="20">
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input class="inp" id="privCodeInp" placeholder='הקלד קוד (למשל: PIZZA)' style="margin-bottom:0;border-color:rgba(160,110,245,.4);text-transform:uppercase;letter-spacing:2px;flex:1" oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')" maxlength="20">
+        <button type="button" onclick="genPrivCode()" style="padding:0 14px;background:rgba(160,110,245,.18);border:1.5px solid rgba(160,110,245,.5);border-radius:12px;color:#a06ef5;font-size:.85rem;cursor:pointer;white-space:nowrap;flex-shrink:0">🎲 אקראי</button>
+      </div>
     </div>
     <label class="label">השם שלך</label>
     <input class="inp" id="creatorNameInp" placeholder="מה שמך?" style="margin-bottom:16px">
@@ -1026,6 +1029,12 @@ function setChallengeType(t){
   document.getElementById('typePublicBtn').className=t==='public'?'type-btn sel-pub':'type-btn';
   document.getElementById('typePrivBtn').className=t==='private'?'type-btn sel-priv':'type-btn';
   document.getElementById('priv-code-row').classList.toggle('hidden',t!=='private');
+}
+function genPrivCode(){
+  const words=['STAR','FIRE','COOL','BEST','WILD','EPIC','LOVE','BOLD','PLAY','VIBE','ACE','ZEN','FLOW','PEAK','GLOW'];
+  const w1=words[Math.floor(Math.random()*words.length)];
+  const w2=words[Math.floor(Math.random()*words.length)];
+  document.getElementById('privCodeInp').value=w1+w2;
 }
 
 function buildQForm(count){
